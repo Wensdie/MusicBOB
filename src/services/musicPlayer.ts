@@ -9,6 +9,7 @@ class musicPlayer implements service{
     private queue: song[] = [];
     private audioPlayer: AudioPlayer;
     private connection!: VoiceConnection;
+    public timer: any;
 
     constructor(interaciton: ChatInputCommandInteraction<CacheType>){
         this.audioPlayer = createAudioPlayer();
@@ -22,6 +23,34 @@ class musicPlayer implements service{
                     guildId: glID,
                     adapterCreator: interaciton.guild.voiceAdapterCreator
                 });
+
+                this.audioPlayer.on(AudioPlayerStatus.Idle, 
+                    async () => {
+                        if(interaciton.channel){
+                            if(this.getQueueLength()>0){
+                                const song = this.getNextSongData();
+                                this.playSong();
+                                if(song){
+                                    clearTimeout(this.timer);
+                                    await interaciton.channel.send({ content: "Playing: " + song.name});
+                                    return;
+                                }
+                            }
+                            else{
+                                await interaciton.channel.send({ content: "No more songs left."});
+                                this.timer = setTimeout(
+                                    () => {
+                                        if(interaciton.channel)
+                                        interaciton.channel.send("5 min without playing music, leaving channel.")
+                                        this.connection.disconnect();
+                                    }, 300000
+                                );
+                                return;
+                            }
+                        }
+                        return;   
+                    }
+                )
             }
         }
     }
@@ -53,7 +82,7 @@ class musicPlayer implements service{
     }
 
     getNextSongData(){
-        if(this.queue.length > 0 ){
+        if(this.queue.length >  0 ){
             return this.queue[0];
         }
     }
