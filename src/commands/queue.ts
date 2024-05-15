@@ -9,13 +9,13 @@ const queue = {
         .setDescription("Showing queque."),
 
     async execute(interaciton: ChatInputCommandInteraction<CacheType>) {
-        if(!bot.services.musicPlayer){
+        if(!bot.services.MusicPlayer){
             await interaciton.reply({ content: "MusicPlayer is not active.", ephemeral: true });
             return;
         }
 
-        if(bot.services.musicPlayer.getQueue()){
-            const mP = bot.services.musicPlayer;
+        if(bot.services.MusicPlayer.getQueue()){
+            const mP = bot.services.MusicPlayer;
 
             if(mP.getQueueLength() === 0 && mP.getPlayer().state.status === AudioPlayerStatus.Idle){
                 await interaciton.reply({ content: "Queue is empty.", ephemeral: true });

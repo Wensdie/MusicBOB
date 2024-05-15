@@ -1,6 +1,6 @@
 import { Client, REST, Routes } from "discord.js";
 import dotenv from "dotenv";
-import command from "../interfaces/command.js";
+import Command from "../interfaces/command.js";
 import fs from "fs";
 
 async function loadCommands(bot: Client){
@@ -11,7 +11,7 @@ async function loadCommands(bot: Client){
     if(!DISCORD_BOT_TOKEN || !DISCORD_BOT_ID){
         throw new Error("Cannot access Discord Bot token or id.");
     }
-    const commandRegistry: command[] = [];
+    const commandRegistry: Command[] = [];
     
     try{
         const folderPath = "commands";

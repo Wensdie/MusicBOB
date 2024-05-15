@@ -14,25 +14,25 @@ const clear = {
             return;
         }
 
-        if(!bot.services.musicPlayer){
+        if(!bot.services.MusicPlayer){
             await interaciton.reply({ content: "MusicPlayer is not active.", ephemeral: true });
             return;
         }
 
-        if(bot.services.musicPlayer){
-            if(bot.services.musicPlayer.getConnection().joinConfig.channelId !== ((interaciton.member) as GuildMember).voice.channelId){
+        if(bot.services.MusicPlayer){
+            if(bot.services.MusicPlayer.getConnection().joinConfig.channelId !== ((interaciton.member) as GuildMember).voice.channelId){
                 await interaciton.reply({ content: "You cannot clear queue on the other channel.", ephemeral: true});
                 return;
             }
 
-            if(bot.services.musicPlayer.getPlayer().state.status === AudioPlayerStatus.Idle && bot.services.musicPlayer.getQueueLength() === 0){
+            if(bot.services.MusicPlayer.getPlayer().state.status === AudioPlayerStatus.Idle && bot.services.MusicPlayer.getQueueLength() === 0){
                 await interaciton.reply({ content: "Queue is already empty.", ephemeral: true });
                 return;
             }
 
-            if(bot.services.musicPlayer.getPlayer().state.status === AudioPlayerStatus.Playing){
-                bot.services.musicPlayer.clearQueue();
-                bot.services.musicPlayer.skipSong();
+            if(bot.services.MusicPlayer.getPlayer().state.status === AudioPlayerStatus.Playing){
+                bot.services.MusicPlayer.clearQueue();
+                bot.services.MusicPlayer.skipSong();
                 await interaciton.reply({ content: "Queue cleared." });
                 return;
             }

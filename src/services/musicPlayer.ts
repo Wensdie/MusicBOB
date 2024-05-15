@@ -1,15 +1,15 @@
-import song from "../interfaces/song.js"
-import service from "../interfaces/service.js";
+import Song from "../interfaces/song.js"
+import Service from "../interfaces/service.js";
 import ytdl from "ytdl-core";
 import { AudioPlayer, AudioPlayerStatus, JoinVoiceChannelOptions, VoiceConnection, createAudioPlayer, createAudioResource, joinVoiceChannel } from "@discordjs/voice";
 import { APIActionRowComponent, CacheType, ChatInputCommandInteraction, Guild, GuildMember } from "discord.js";
 
-class musicPlayer implements service{
-    public name = "musicPlayer";
-    private queue: song[] = [];
+class MusicPlayer implements Service{
+    public name = "MusicPlayer";
+    private queue: Song[] = [];
     private audioPlayer: AudioPlayer;
     private connection!: VoiceConnection;
-    private songNow: song;
+    private songNow: Song;
     public timer: any;
 
     constructor(interaciton: ChatInputCommandInteraction<CacheType>){
@@ -102,7 +102,7 @@ class musicPlayer implements service{
         const {title, lenghtS} = await ytdl.getInfo(url).then((info) => {return {title: info.videoDetails.title, lenghtS: info.videoDetails.lengthSeconds};});
         const lenghtNumber = Number(lenghtS);
         const lenght = String(Math.floor(lenghtNumber/60)) + ":" + String(lenghtNumber%60);
-        const song: song = {
+        const song: Song = {
             name: title,
             url: url,
             lenght: lenght
@@ -132,4 +132,4 @@ class musicPlayer implements service{
         }
     }
 }
-export default musicPlayer;
+export default MusicPlayer;

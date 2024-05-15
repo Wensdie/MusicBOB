@@ -1,7 +1,7 @@
-interface song{
+interface Song{
     name: string,
     url: string,
     lenght: string
 }
 
-export default song;
+export default Song;

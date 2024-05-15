@@ -1,7 +1,7 @@
 import { CacheType, ChatInputCommandInteraction, Guild, GuildMFALevel, GuildMember, SlashCommandBuilder } from "discord.js";
 import { AudioPlayerStatus, VoiceConnectionStatus, createAudioPlayer, joinVoiceChannel } from "@discordjs/voice";
 import bot from "../bot.js"
-import musicPlayer from "../services/musicPlayer.js";
+import MusicPlayer from "../services/musicPlayer.js";
 import ytdl from "ytdl-core";
 
 const play = {
@@ -19,8 +19,8 @@ const play = {
             return;
         }
 
-        if(bot.services.musicPlayer){
-            const mP = bot.services.musicPlayer;
+        if(bot.services.MusicPlayer){
+            const mP = bot.services.MusicPlayer;
             if(mP.getConnection().joinConfig.channelId !== ((interaciton.member) as GuildMember).voice.channelId){
                 await interaciton.reply({ content: "Bot is arleady connected on other channel.", ephemeral: true});
                 return;
@@ -70,13 +70,13 @@ const play = {
                 return;
             }
 
-            bot.services.musicPlayer = new musicPlayer(interaciton);
-            const mP = bot.services.musicPlayer;
+            bot.services.MusicPlayer = new MusicPlayer(interaciton);
+            const mP = bot.services.MusicPlayer;
 
             mP.getConnection().on(VoiceConnectionStatus.Disconnected, 
                 () => {
                     clearTimeout(mP.timer);
-                    bot.services.musicPlayer  = undefined;
+                    bot.services.MusicPlayer  = undefined;
                 }
             )
 

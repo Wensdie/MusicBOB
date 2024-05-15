@@ -1,5 +1,5 @@
-interface service{
+interface Service{
     name: string,
 }
 
-export default service;
+export default Service;
