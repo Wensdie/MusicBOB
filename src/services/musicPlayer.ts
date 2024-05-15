@@ -49,7 +49,7 @@ class MusicPlayer implements Service{
                                     () => {
                                         if(interaciton.channel)
                                         interaciton.channel.send("5 min without playing music, leaving channel. Bajo!");
-                                        this.connection.disconnect();
+                                        this.connection.disconnect();;
                                     }, 300000
                                 );
                                 return;

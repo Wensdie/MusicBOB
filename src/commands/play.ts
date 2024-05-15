@@ -76,6 +76,7 @@ const play = {
             mP.getConnection().on(VoiceConnectionStatus.Disconnected, 
                 () => {
                     clearTimeout(mP.timer);
+                    mP.connection.destroy();
                     bot.services.MusicPlayer  = undefined;
                 }
             )
