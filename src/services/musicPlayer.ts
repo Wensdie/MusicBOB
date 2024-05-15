@@ -9,9 +9,16 @@ class musicPlayer implements service{
     private queue: song[] = [];
     private audioPlayer: AudioPlayer;
     private connection!: VoiceConnection;
+    private songNow: song;
     public timer: any;
 
     constructor(interaciton: ChatInputCommandInteraction<CacheType>){
+        this.songNow ={
+            name: "none",
+            url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            lenght: "3:32"
+        }
+
         this.audioPlayer = createAudioPlayer();
         if(interaciton.member && interaciton.guild){
             const guildMember = (interaciton.member) as GuildMember;
@@ -29,10 +36,10 @@ class musicPlayer implements service{
                         if(interaciton.channel){
                             if(this.getQueueLength()>0){
                                 const song = this.getNextSongData();
-                                this.playSong();
+                                this.playSong(interaciton);
                                 if(song){
                                     clearTimeout(this.timer);
-                                    await interaciton.channel.send({ content: "Playing: " + song.name});
+                                    await interaciton.channel.send({ content: "Playing: "  + song.name + " - " +song.lenght });
                                     return;
                                 }
                             }
@@ -41,7 +48,7 @@ class musicPlayer implements service{
                                 this.timer = setTimeout(
                                     () => {
                                         if(interaciton.channel)
-                                        interaciton.channel.send("5 min without playing music, leaving channel.")
+                                        interaciton.channel.send("5 min without playing music, leaving channel. Bajo!");
                                         this.connection.disconnect();
                                     }, 300000
                                 );
@@ -63,16 +70,38 @@ class musicPlayer implements service{
         return this.connection;
     }
 
+    getSongNow(){
+        return this.songNow;
+    }
+
     getLastSong(){
         return this.queue[this.queue.length-1];
+    }
+
+    getQueue(){
+        return this.queue;
     }
 
     getQueueLength(){
         return this.queue.length;
     }
 
+    skipSong(){
+        this.audioPlayer.stop();
+    }
+
+    setSubscription(){
+        this.connection.subscribe(this.audioPlayer);
+    }
+
+    clearQueue(){
+        this.queue = [];
+    }
+
     async addSong(url: string){
-        const {title, lenght} = await ytdl.getInfo(url).then((info) => {return {title: info.videoDetails.title, lenght: info.videoDetails.lengthSeconds};});
+        const {title, lenghtS} = await ytdl.getInfo(url).then((info) => {return {title: info.videoDetails.title, lenghtS: info.videoDetails.lengthSeconds};});
+        const lenghtNumber = Number(lenghtS);
+        const lenght = String(Math.floor(lenghtNumber/60)) + ":" + String(lenghtNumber%60);
         const song: song = {
             name: title,
             url: url,
@@ -87,17 +116,20 @@ class musicPlayer implements service{
         }
     }
 
-    playSong(){
+    playSong(interaciton: ChatInputCommandInteraction<CacheType>){
         const song = this.queue.shift();
         if(song){
             const url = song.url;
-            const songResource = createAudioResource(ytdl(url, {filter: "audioonly", highWaterMark: 1 << 25}));
-            this.audioPlayer.play(songResource);
+            try{
+                this.songNow = song;
+                const songResource = createAudioResource(ytdl(url, {filter: "audioonly", highWaterMark: 1 << 25}));
+                this.audioPlayer.play(songResource);
+            }
+            catch(er){
+                if(interaciton.channel)
+                    interaciton.channel.send("Video was not found.");
+            }
         }
-    }
-
-    setSubscription(){
-        this.connection.subscribe(this.audioPlayer);
     }
 }
 export default musicPlayer;

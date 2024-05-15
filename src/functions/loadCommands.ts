@@ -40,10 +40,10 @@ async function loadCommands(bot: Client){
     //         { body:  commandRegistry},
     //     );
 
-    //     console.log("Commands registered succesfully.")
+    //     console.log("Commands registered succesfully.");
     // }
     // catch (er) {
-    //     console.error("Error registering commands: " + er)
+    //     console.error("Error registering commands: " + er);
     // }   
     
 }

@@ -2,6 +2,7 @@ import { CacheType, ChatInputCommandInteraction, Guild, GuildMFALevel, GuildMemb
 import { AudioPlayerStatus, VoiceConnectionStatus, createAudioPlayer, joinVoiceChannel } from "@discordjs/voice";
 import bot from "../bot.js"
 import musicPlayer from "../services/musicPlayer.js";
+import ytdl from "ytdl-core";
 
 const play = {
     data: new SlashCommandBuilder()
@@ -26,10 +27,18 @@ const play = {
             }
 
             const url = interaciton.options.getString("url");
-            const urlPattern = /^(https:\/\/www.youtube.com\/).*/;
+            const urlPattern = /^(https:\/\/www\.youtube\.com\/watch).*/;
 
             if(!url || !(url.match(urlPattern))){
                 await interaciton.reply({ content: "Invalid URL.", ephemeral: true});
+                return;
+            }
+
+            try{
+                await ytdl.getInfo(url).then((info) => {return info.videoDetails.age_restricted;});
+            }
+            catch(er){
+                await interaciton.reply({ content: "Can not play age restricted video. Sorry :(", ephemeral: true});
                 return;
             }
 
@@ -37,24 +46,24 @@ const play = {
             const song = mP.getLastSong();
             if(mP.getPlayer().state.status === AudioPlayerStatus.Playing){
                 clearTimeout(mP.timer);
-                await interaciton.reply({ content: "Added to queue: " + song.name});
+                await interaciton.reply({ content: "Added to queue: " + song.name + " - " +song.lenght });
                 return;
             }
             else{
                 if(mP.getQueueLength()>0){
                     clearTimeout(mP.timer);
                     const song = mP.getNextSongData();
-                    mP.playSong();
+                    mP.playSong(interaciton);
                     mP.setSubscription();
                     if(song)
-                        await interaciton.reply({ content: "Playing: " + song.name});
+                        await interaciton.reply({ content: "Playing: " + song.name + " - " +song.lenght });
                 }
                 return;
             } 
         }
         else{
             const url = interaciton.options.getString("url");
-            const urlPattern = /^(https:\/\/www.youtube.com\/).*/;
+            const urlPattern = /^(https:\/\/www\.youtube\.com\/watch).*/;
 
             if(!url || !(url.match(urlPattern))){
                 await interaciton.reply({ content: "Invalid URL.", ephemeral: true});
@@ -66,25 +75,34 @@ const play = {
 
             mP.getConnection().on(VoiceConnectionStatus.Disconnected, 
                 () => {
+                    clearTimeout(mP.timer);
                     bot.services.musicPlayer  = undefined;
                 }
             )
+
+            try{
+                await ytdl.getInfo(url).then((info) => {return info.videoDetails.age_restricted;});
+            }
+            catch(er){
+                await interaciton.reply({ content: "Can not play age restricted video. Sorry :(", ephemeral: true});
+                return;
+            }
 
             await mP.addSong(url);
             const song = mP.getLastSong();
             if(mP.getPlayer().state.status === AudioPlayerStatus.Playing){
                 clearTimeout(mP.timer);
-                await interaciton.reply({ content: "Added to queue: " + song.name});
+                await interaciton.reply({ content: "Added to queue: "  + song.name + " - " +song.lenght });
                 return;
             }
             else{
                 if(mP.getQueueLength()>0){
                     clearTimeout(mP.timer);
                     const song = mP.getNextSongData();
-                    mP.playSong();
+                    mP.playSong(interaciton);
                     mP.setSubscription();
                     if(song)
-                        await interaciton.reply({ content: "Playing: " + song.name});
+                        await interaciton.reply({ content: "Playing: "  + song.name + " - " +song.lenght });
                 }
                 return;
             } 
