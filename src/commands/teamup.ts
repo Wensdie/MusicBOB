@@ -1,5 +1,8 @@
 import { AnonymousGuild, CacheType, ChatInputCommandInteraction, GuildMember, SlashCommandBuilder, VoiceBasedChannel } from "discord.js";
 import MemberTeam from "../interfaces/memberTeam.js";
+import bot from "../bot.js";
+import Teams from "../services/teams.js";
+import shuffleArray from "../functions/shuffleArray.js";
 
 const teamup = {
     data: new SlashCommandBuilder()
@@ -16,7 +19,12 @@ const teamup = {
             return;
         }
 
-        const members = ((((interaciton.member) as GuildMember).voice.channel) as VoiceBasedChannel).members.filter(user => user.displayName !== "MusicBOB");
+        if(!bot.services.teams){
+            bot.services.teams = new Teams();
+        }
+
+
+        const members = ((((interaciton.member) as GuildMember).voice.channel) as VoiceBasedChannel).members.filter(user => !bot.services.teams.getIgnore().includes(user.displayName) && !bot.services.teams.getIgnore().includes(user.nickname) && !(user.displayName === "MusicBOB"));
         
         if(members.size === 1){
             await interaciton.reply({ content: "For ever alone. :(", ephemeral: true });
@@ -29,7 +37,7 @@ const teamup = {
             if(Number(interaciton.options.getString("amount")) > 2 && Number(interaciton.options.getString("amount")) < members.size)
                 amount = Number(interaciton.options.getString("amount"));
             else{
-                await interaciton.reply({ content: "invalid team amount.", ephemeral: true })
+                await interaciton.reply({ content: "Invalid team amount.", ephemeral: true })
                 return;
             }
         }
@@ -73,15 +81,6 @@ const teamup = {
 
         await interaciton.reply({ content: message });
         return;
-
-        function shuffleArray(array: number[]) {
-            for (let i = array.length - 1; i > 0; i--) {
-                let j = Math.floor(Math.random() * (i + 1));
-                let temp = array[i];
-                array[i] = array[j];
-                array[j] = temp;
-            }
-        }
     } 
     
 }

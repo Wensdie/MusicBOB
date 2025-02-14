@@ -1,8 +1,9 @@
 import { Client, REST, Routes } from "discord.js";
 import dotenv from "dotenv";
+import Command from "../interfaces/command.js";
 import fs from "fs";
 
-async function loadCommands(bot: Client){
+async function registerCommands(){
     dotenv.config();
 
     const DISCORD_BOT_TOKEN = process.env["DISCORD_BOT_TOKEN"];
@@ -10,6 +11,7 @@ async function loadCommands(bot: Client){
     if(!DISCORD_BOT_TOKEN || !DISCORD_BOT_ID){
         throw new Error("Cannot access Discord Bot token or id.");
     }
+    const commandRegistry: Command[] = [];
     
     try{
         const folderPath = "commands";
@@ -19,7 +21,7 @@ async function loadCommands(bot: Client){
         
         for(const file of folderFiles){
             const {default: command} = await import("../commands/"+ file);
-            bot.commands.set(command.data.name, command);
+            commandRegistry.push(command.data.toJSON());
         }
 
         console.log("Commands loaded succefully.")
@@ -27,5 +29,24 @@ async function loadCommands(bot: Client){
     catch (er) {
         console.error("Error loading commands: " + er)
     }  
+    
+    try{
+        console.log("Registering bot commands.")
+        const rest = new REST().setToken(DISCORD_BOT_TOKEN);
+
+        await rest.put(
+            Routes.applicationCommands(DISCORD_BOT_ID),
+            { body:  commandRegistry},
+        );
+
+        console.log("Commands registered succesfully.");
+    }
+    catch (er) {
+        console.error("Error registering commands: " + er);
+    }   
+    
 }
-export default loadCommands;
+
+registerCommands();
+
+export default registerCommands;

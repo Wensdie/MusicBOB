@@ -38,7 +38,7 @@ const play = {
                 await ytdl.getInfo(url).then((info) => {return info.videoDetails.age_restricted;});
             }
             catch(er){
-                await interaciton.reply({ content: "Can not play age restricted video. Sorry :(", ephemeral: true});
+                await interaciton.reply({ content: `Error: ${er}`, ephemeral: true});
                 return;
             }
 
