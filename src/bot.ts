@@ -81,7 +81,7 @@ export class Bot {
 
       for (const file of folderFiles) {
         const { default: service } = await import(`../services/${file}`);
-        this.discordClient.services.set(service.name);
+        this.discordClient.services.set(service.name, service);
       }
 
       console.log('Services loaded succefully.');
