@@ -1,25 +1,92 @@
-import { Client, GatewayIntentBits, Collection } from "discord.js";
-import dotenv from "dotenv";
-import loadCommands from "./functions/loadCommands.js";
-import eventHandler from "./functions/eventHandler.js";
-import loadServices from "./functions/loadServices.js";
+import { ClientExtended, Collection, Events, GatewayIntentBits } from 'discord.js';
+import fs from 'fs';
 
-    dotenv.config();
+export class Bot {
+  public readonly discordClient: ClientExtended;
+  private static instance: Bot;
 
-    const DISCORD_BOT_TOKEN = process.env["DISCORD_BOT_TOKEN"];
-    if(!process.env["DISCORD_BOT_TOKEN"]){
-        throw new Error("Cannot access Discord Bot token.");
+  private constructor(
+    private readonly discordToken: string,
+    private readonly discordId: string,
+  ) {
+    this.discordClient = new ClientExtended({
+      intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
+    });
+
+    this.discordClient.commands = new Collection();
+    this.discordClient.services = new Collection();
+
+    this.discordClient.on(Events.InteractionCreate, (interaction) => {
+      if (!interaction.isChatInputCommand()) {
+        return;
+      }
+
+      const command = (interaction.client as ClientExtended).commands.get(interaction.commandName);
+
+      if (!command) {
+        console.error('Command was not found.');
+        return;
+      }
+
+      try {
+        command.execute(interaction);
+      } catch (er) {
+        console.log(er);
+      }
+    });
+  }
+
+  public static getInstance(discordToken?: string, discordId?: string): Bot {
+    if (!Bot.instance && discordToken && discordId) {
+      Bot.instance = new Bot(discordToken, discordId);
     }
+    return Bot.instance;
+  }
 
-    const bot = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
+  public async authorize(): Promise<void> {
+    console.log('Authorizing to Discord API.');
+    await this.discordClient.login(this.discordToken);
+  }
 
-    bot.commands = new Collection();
-    loadCommands(bot);
-    eventHandler(bot);
+  public async loadUtilities(): Promise<void> {
+    console.log('Loading Bot utilities.');
+    await this.loadCommands();
+    await this.loadServices();
+  }
 
-    bot.services = new Collection();
-    loadServices(bot);
+  private async loadCommands(): Promise<void> {
+    try {
+      const folderPath = 'commands';
+      const folderFiles = fs.readdirSync(folderPath);
 
-    bot.login(DISCORD_BOT_TOKEN);
+      console.log('Loading bot commands.');
 
-    export default bot;
+      for (const file of folderFiles) {
+        const { default: command } = await import(`../commands/${file}`);
+        this.discordClient.commands.set(command.data.name, command);
+      }
+
+      console.log('Commands loaded succefully.');
+    } catch (er) {
+      console.error(`Error loading commands: ${er}`);
+    }
+  }
+
+  private async loadServices(): Promise<void> {
+    try {
+      const folderPath = 'services';
+      const folderFiles = fs.readdirSync(folderPath);
+
+      console.log('Loading bot services.');
+
+      for (const file of folderFiles) {
+        const { default: service } = await import(`../services/${file}`);
+        this.discordClient.services.set(service.name);
+      }
+
+      console.log('Services loaded succefully.');
+    } catch (er) {
+      console.error(`Error loading services: ${er}`);
+    }
+  }
+}

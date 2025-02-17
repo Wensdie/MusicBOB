@@ -2,26 +2,32 @@
   "name": "musicbob",
   "version": "1.0.0",
   "description": "Discord bot",
-  "main": "bot.js",
+  "main": "index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "npm run build && node .\\lib\\index.js",
+    "build": "if exist .\\lib (rmdir .\\lib /s /q) && tsc --build",
+    "lint": "eslint --fix .",
+    "register": "npm run build && node ..\\lib\\functions\\registerCommands.js"
   },
-  "author": "",
+  "author": "Maciej Malinowski",
   "license": "ISC",
   "devDependencies": {
-    "@types/express": "^4.17.21",
-    "typescript": "^5.4.5"
+    "typescript-eslint": "8.20.0",
+    "eslint": "9.18.0",
+    "eslint-plugin-perfectionist": "4.0.1",
+    "eslint-config-prettier": "10.0.1",
+    "eslint-plugin-prettier": "5.2.2",
+    "prettier": "3.4.2"
   },
   "dependencies": {
     "@discordjs/voice": "^0.17.0",
     "discord.js": "^14.15.2",
     "dotenv": "^16.4.5",
+    "typescript": "^5.4.5",
     "express": "^4.19.2",
-    "fs": "^0.0.1-security",
     "import-directories": "^0.0.8",
     "musicbob": "file:",
     "path": "^0.12.7",
     "ytdl-core": "^4.11.5"
-  },
-  "type": "module"
+  }
 }

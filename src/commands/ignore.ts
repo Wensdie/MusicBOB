@@ -1,34 +1,36 @@
-import { AnonymousGuild, CacheType, ChatInputCommandInteraction, GuildMember, SlashCommandBuilder, VoiceBasedChannel } from "discord.js";
-import MemberTeam from "../interfaces/memberTeam.js";
-import bot from "../bot.js";
-import Teams from "../services/teams.js";
+import {
+  AnonymousGuild,
+  CacheType,
+  ChatInputCommandInteraction,
+  GuildMember,
+  SlashCommandBuilder,
+  VoiceBasedChannel,
+} from 'discord.js';
+import bot from '../bot.js';
+import MemberTeam from '../interfaces/memberTeam.js';
+import Teams from '../services/teams.js';
 
 const ignore = {
-    data: new SlashCommandBuilder()
-        .setName("ignore")
-        .setDescription("Ignore user in team building.")
-        .addStringOption(option => 
-            option.setName("user")
-                .setDescription("User to ignore.")
-                .setRequired(true)          
+  data: new SlashCommandBuilder()
+    .setName('ignore')
+    .setDescription('Ignore user in team building.')
+    .addStringOption((option) =>
+      option.setName('user').setDescription('User to ignore.').setRequired(true),
     ),
-    async execute(interaciton: ChatInputCommandInteraction<CacheType>) {
-        if(!(((interaciton.member) as GuildMember).voice.channelId)){
-            await interaciton.reply({ content: "You have to join voice chat first.", ephemeral: true })
-            return;
-        }
+  async execute(interaciton: ChatInputCommandInteraction) {
+    if (!(interaciton.member as GuildMember).voice.channelId) {
+      await interaciton.reply({ content: 'You have to join voice chat first.', ephemeral: true });
+      return;
+    }
 
-        if(!bot.services.teams){
-            bot.services.teams = new Teams();
-        }
+    if (!bot.services.teams) {
+      bot.services.teams = new Teams();
+    }
 
-
-        const user = interaciton.options.getString("user");
-        bot.services.teams.addIgnore(user);
-        await interaciton.reply({ content: "Ignoring: " + user});
-        return;
-    } 
-    
-}
+    const user = interaciton.options.getString('user');
+    bot.services.teams.addIgnore(user);
+    await interaciton.reply({ content: `Ignoring: ${user}` });
+  },
+};
 
 export default ignore;

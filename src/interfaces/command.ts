@@ -1,7 +1,5 @@
-import { SlashCommandBuilder } from "discord.js";
+import { SlashCommandBuilder } from 'discord.js';
 
-interface Command {
-    data: SlashCommandBuilder
+export interface Command {
+  data: SlashCommandBuilder;
 }
-
-export default Command;

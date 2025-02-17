@@ -1,6 +1,6 @@
-interface MemberTeam{
-    name: string,
-    team: number
+interface MemberTeam {
+  name: string;
+  team: number;
 }
 
 export default MemberTeam;
