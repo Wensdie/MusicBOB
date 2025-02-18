@@ -1,29 +1,23 @@
-import {
-  AnonymousGuild,
-  CacheType,
-  ChatInputCommandInteraction,
-  GuildMember,
-  SlashCommandBuilder,
-  VoiceBasedChannel,
-} from 'discord.js';
-import bot from '../bot.js';
-import MemberTeam from '../interfaces/memberTeam.js';
+import { ChatInputCommandInteraction, GuildMember, SlashCommandBuilder } from 'discord.js';
+import { Bot } from '../Bot.js';
 import Teams from '../services/teams.js';
 
 const clearignore = {
   data: new SlashCommandBuilder().setName('clearignore').setDescription('Clear ingored users.'),
 
-  async execute(interaciton: ChatInputCommandInteraction) {
+  async execute(interaciton: ChatInputCommandInteraction): Promise<void> {
     if (!(interaciton.member as GuildMember).voice.channelId) {
       await interaciton.reply({ content: 'You have to join voice chat first.', ephemeral: true });
       return;
     }
 
-    if (!bot.services.teams) {
-      bot.services.teams = new Teams();
+    const bot = Bot.getInstance();
+
+    if (!bot.discordClient.services.Teams) {
+      bot.discordClient.services.Teams = new Teams();
     }
 
-    bot.services.teams.clearIgnore();
+    bot.discordClient.services.Teams.clearIgnore();
     await interaciton.reply({ content: 'Ignore cleared.' });
   },
 };

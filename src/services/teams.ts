@@ -1,6 +1,4 @@
-import Service from '../interfaces/service.js';
-
-class Teams implements Service {
+class Teams {
   public name = 'Teams';
   private ignore: string[] = [];
 

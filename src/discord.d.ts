@@ -1,8 +1,11 @@
-import { Client } from 'discord.js';
-import Service from './interfaces/service';
+import { Collection } from 'discord.js';
+import MusicPlayer from './services/musicPlayer.js';
+import Teams from './services/teams.js';
+import type Command from './types/command.js';
+
 declare module 'discord.js' {
-  export class ClientExtended extends Client {
-    public commands: Collection<string, Command>;
-    public services: Collection<string, Service>;
+  interface Client {
+    commands: Collection<string, Command>;
+    services: { Teams: Teams; MusicPlayer: MusicPlayer };
   }
 }

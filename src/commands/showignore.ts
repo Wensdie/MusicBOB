@@ -1,32 +1,26 @@
-import {
-  AnonymousGuild,
-  CacheType,
-  ChatInputCommandInteraction,
-  GuildMember,
-  SlashCommandBuilder,
-  VoiceBasedChannel,
-} from 'discord.js';
-import bot from '../bot.js';
-import MemberTeam from '../interfaces/memberTeam.js';
+import { ChatInputCommandInteraction, GuildMember, SlashCommandBuilder } from 'discord.js';
+import { Bot } from '../Bot.js';
 import Teams from '../services/teams.js';
 
 const showignore = {
   data: new SlashCommandBuilder().setName('showignore').setDescription('Show ingored users.'),
 
-  async execute(interaciton: ChatInputCommandInteraction) {
+  async execute(interaciton: ChatInputCommandInteraction): Promise<void> {
     if (!(interaciton.member as GuildMember).voice.channelId) {
       await interaciton.reply({ content: 'You have to join voice chat first.', ephemeral: true });
       return;
     }
 
-    if (!bot.services.teams) {
-      bot.services.teams = new Teams();
+    const bot = Bot.getInstance();
+
+    if (!bot.discordClient.services.Teams) {
+      bot.discordClient.services.Teams = new Teams();
     }
 
-    if (bot.services.teams.getIgnore().length > 0) {
+    if (bot.discordClient.services.Teams.getIgnore().length > 0) {
       let ignoringTab = 'Ignoring:\n\n';
 
-      for (const ign of bot.services.teams.getIgnore()) {
+      for (const ign of bot.discordClient.services.Teams.getIgnore()) {
         ignoringTab += `❌ ${ign}\n`;
       }
 

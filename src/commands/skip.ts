@@ -1,36 +1,25 @@
-import {
-  CacheType,
-  ChatInputCommandInteraction,
-  Guild,
-  GuildMember,
-  GuildMFALevel,
-  SlashCommandBuilder,
-} from 'discord.js';
-import {
-  AudioPlayerStatus,
-  createAudioPlayer,
-  joinVoiceChannel,
-  VoiceConnectionStatus,
-} from '@discordjs/voice';
-import bot from '../bot.js';
-
+import { ChatInputCommandInteraction, GuildMember, SlashCommandBuilder } from 'discord.js';
+import { AudioPlayerStatus } from '@discordjs/voice';
+import { Bot } from '../Bot.js';
 const skip = {
   data: new SlashCommandBuilder().setName('skip').setDescription('Skiping song.'),
 
-  async execute(interaciton: ChatInputCommandInteraction) {
+  async execute(interaciton: ChatInputCommandInteraction): Promise<void> {
     if (!(interaciton.member as GuildMember).voice.channelId) {
       await interaciton.reply({ content: 'You have to join voice chat first.', ephemeral: true });
       return;
     }
 
-    if (!bot.services.MusicPlayer) {
+    const bot = Bot.getInstance();
+
+    if (!bot.discordClient.services.MusicPlayer) {
       await interaciton.reply({ content: 'MusicPlayer is not active.', ephemeral: true });
       return;
     }
 
-    if (bot.services.MusicPlayer) {
+    if (bot.discordClient.services.MusicPlayer) {
       if (
-        bot.services.MusicPlayer.getConnection().joinConfig.channelId !==
+        bot.discordClient.services.MusicPlayer.getConnection().joinConfig.channelId !==
         (interaciton.member as GuildMember).voice.channelId
       ) {
         await interaciton.reply({
@@ -40,13 +29,18 @@ const skip = {
         return;
       }
 
-      if (bot.services.MusicPlayer.getPlayer().state.status === AudioPlayerStatus.Idle) {
+      if (
+        bot.discordClient.services.MusicPlayer.getPlayer().state.status === AudioPlayerStatus.Idle
+      ) {
         await interaciton.reply({ content: 'Nothing is playing right now.', ephemeral: true });
         return;
       }
 
-      if (bot.services.MusicPlayer.getPlayer().state.status === AudioPlayerStatus.Playing) {
-        bot.services.MusicPlayer.skipSong();
+      if (
+        bot.discordClient.services.MusicPlayer.getPlayer().state.status ===
+        AudioPlayerStatus.Playing
+      ) {
+        bot.discordClient.services.MusicPlayer.skipSong();
         await interaciton.reply({ content: 'Song skiped.' });
       }
     }

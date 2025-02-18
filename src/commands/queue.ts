@@ -1,31 +1,21 @@
-import {
-  CacheType,
-  ChatInputCommandInteraction,
-  Guild,
-  GuildMember,
-  GuildMFALevel,
-  SlashCommandBuilder,
-} from 'discord.js';
-import {
-  AudioPlayerStatus,
-  createAudioPlayer,
-  joinVoiceChannel,
-  VoiceConnectionStatus,
-} from '@discordjs/voice';
-import bot from '../bot.js';
-import song from '../interfaces/song.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { AudioPlayerStatus } from '@discordjs/voice';
+import { Bot } from '../Bot.js';
+import Song from '../types/song.js';
 
 const queue = {
   data: new SlashCommandBuilder().setName('queue').setDescription('Showing queque.'),
 
-  async execute(interaciton: ChatInputCommandInteraction) {
-    if (!bot.services.MusicPlayer) {
+  async execute(interaciton: ChatInputCommandInteraction): Promise<void> {
+    const bot = Bot.getInstance();
+
+    if (!bot.discordClient.services.MusicPlayer) {
       await interaciton.reply({ content: 'MusicPlayer is not active.', ephemeral: true });
       return;
     }
 
-    if (bot.services.MusicPlayer.getQueue()) {
-      const mP = bot.services.MusicPlayer;
+    if (bot.discordClient.services.MusicPlayer.getQueue()) {
+      const mP = bot.discordClient.services.MusicPlayer;
 
       if (mP.getQueueLength() === 0 && mP.getPlayer().state.status === AudioPlayerStatus.Idle) {
         await interaciton.reply({ content: 'Queue is empty.', ephemeral: true });
@@ -34,19 +24,19 @@ const queue = {
 
       const songNow = mP.getSongNow();
 
-      let queue = `Playing: ${songNow.name} - ${songNow.lenght}`;
+      let queueString = `Playing: ${songNow.name} - ${songNow.lenght}`;
 
       if (mP.getQueueLength() > 0) {
-        queue += '\n\n';
-        const songs: song[] = mP.getQueue();
+        queueString += '\n\n';
+        const songs: Song[] = mP.getQueue();
         let i = 1;
         for (const song of songs) {
-          queue += `${i}) ${song.name} - ${song.lenght}\n`;
+          queueString += `${i}) ${song.name} - ${song.lenght}\n`;
           i++;
         }
       }
 
-      await interaciton.reply({ content: queue });
+      await interaciton.reply({ content: queueString });
     }
   },
 };

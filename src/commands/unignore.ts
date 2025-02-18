@@ -17,7 +17,7 @@ const unignore = {
     const bot = Bot.getInstance();
 
     const user = interaciton.options.getString('user');
-    const ifDeleted = bot.discordClient.services.teams.deleteIgnore(user);
+    const ifDeleted = bot.discordClient.services.Teams.deleteIgnore(user ?? '');
     if (ifDeleted) {
       await interaciton.reply({ content: `Unignoring: ${user}` });
     } else {

@@ -1,19 +1,7 @@
-import {
-  CacheType,
-  ChatInputCommandInteraction,
-  Guild,
-  GuildMember,
-  GuildMFALevel,
-  SlashCommandBuilder,
-} from 'discord.js';
+import { ChatInputCommandInteraction, GuildMember, SlashCommandBuilder } from 'discord.js';
 import ytdl from 'ytdl-core';
-import {
-  AudioPlayerStatus,
-  createAudioPlayer,
-  joinVoiceChannel,
-  VoiceConnectionStatus,
-} from '@discordjs/voice';
-import bot from '../bot.js';
+import { AudioPlayerStatus, VoiceConnectionStatus } from '@discordjs/voice';
+import { Bot } from '../Bot.js';
 import MusicPlayer from '../services/musicPlayer.js';
 
 const play = {
@@ -23,14 +11,17 @@ const play = {
     .addStringOption((option) =>
       option.setName('url').setDescription('Plays video from youtube.').setRequired(true),
     ),
-  async execute(interaciton: ChatInputCommandInteraction) {
+  async execute(interaciton: ChatInputCommandInteraction): Promise<void> {
     if (!(interaciton.member as GuildMember).voice.channelId) {
       await interaciton.reply({ content: 'You have to join voice chat first.', ephemeral: true });
       return;
     }
 
-    if (bot.services.MusicPlayer) {
-      const mP = bot.services.MusicPlayer;
+    const bot = Bot.getInstance();
+
+    if (bot.discordClient.services.MusicPlayer) {
+      const mP = bot.discordClient.services.MusicPlayer;
+      const timer = mP.timer;
       if (
         mP.getConnection().joinConfig.channelId !==
         (interaciton.member as GuildMember).voice.channelId
@@ -62,15 +53,19 @@ const play = {
       await mP.addSong(url);
       const song = mP.getLastSong();
       if (mP.getPlayer().state.status === AudioPlayerStatus.Playing) {
-        clearTimeout(mP.timer);
+        if (timer instanceof NodeJS.Timeout) {
+          clearTimeout(timer);
+        }
         await interaciton.reply({ content: `Added to queue: ${song.name} - ${song.lenght}` });
       } else if (mP.getQueueLength() > 0) {
-        clearTimeout(mP.timer);
-        const song = mP.getNextSongData();
-        mP.playSong(interaciton);
+        if (timer instanceof NodeJS.Timeout) {
+          clearTimeout(timer);
+        }
+        const nextSong = mP.getNextSongData();
+        await mP.playSong(interaciton);
         mP.setSubscription();
-        if (song) {
-          await interaciton.reply({ content: `Playing: ${song.name} - ${song.lenght}` });
+        if (nextSong) {
+          await interaciton.reply({ content: `Playing: ${nextSong.name} - ${nextSong.lenght}` });
         }
       }
     } else {
@@ -82,20 +77,23 @@ const play = {
         return;
       }
 
-      bot.services.MusicPlayer = new MusicPlayer(interaciton);
-      const mP = bot.services.MusicPlayer;
+      bot.discordClient.services.MusicPlayer = new MusicPlayer(interaciton);
+      const mP = bot.discordClient.services.MusicPlayer;
 
       mP.getConnection().on(VoiceConnectionStatus.Disconnected, () => {
-        clearTimeout(mP.timer);
+        const timer = mP.timer;
+        if (timer instanceof NodeJS.Timeout) {
+          clearTimeout(timer);
+        }
         mP.connection.destroy();
-        bot.services.MusicPlayer = undefined;
       });
 
       try {
         await ytdl.getInfo(url).then((info) => {
           return info.videoDetails.age_restricted;
         });
-      } catch (er) {
+      } catch (er: unknown) {
+        console.log(er);
         await interaciton.reply({
           content: 'Can not play age restricted video. Sorry :(',
           ephemeral: true,
@@ -106,15 +104,21 @@ const play = {
       await mP.addSong(url);
       const song = mP.getLastSong();
       if (mP.getPlayer().state.status === AudioPlayerStatus.Playing) {
-        clearTimeout(mP.timer);
+        const timer = mP.timer;
+        if (timer instanceof NodeJS.Timeout) {
+          clearTimeout(timer);
+        }
         await interaciton.reply({ content: `Added to queue: ${song.name} - ${song.lenght}` });
       } else if (mP.getQueueLength() > 0) {
-        clearTimeout(mP.timer);
-        const song = mP.getNextSongData();
-        mP.playSong(interaciton);
+        const timer = mP.timer;
+        if (timer instanceof NodeJS.Timeout) {
+          clearTimeout(timer);
+        }
+        const nextSong = mP.getNextSongData();
+        await mP.playSong(interaciton);
         mP.setSubscription();
-        if (song) {
-          await interaciton.reply({ content: `Playing: ${song.name} - ${song.lenght}` });
+        if (nextSong) {
+          await interaciton.reply({ content: `Playing: ${nextSong.name} - ${nextSong.lenght}` });
         }
       }
     }

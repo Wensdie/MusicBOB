@@ -1,8 +1,7 @@
-import { REST, Routes } from 'discord.js';
+import { REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from 'discord.js';
 import dotenv from 'dotenv';
 import fs from 'fs';
-import { Command } from '../interfaces/command.js';
-
+import { commandSchema } from '../schemas/commandSchema.js';
 (async (): Promise<void> => {
   dotenv.config();
 
@@ -12,17 +11,20 @@ import { Command } from '../interfaces/command.js';
   if (!DISCORD_BOT_TOKEN || !DISCORD_BOT_ID) {
     throw new Error('Cannot access Discord Bot token or id.');
   }
-  const commandRegistry: Command[] = [];
+  const commandRegistry: RESTPostAPIChatInputApplicationCommandsJSONBody[] = [];
 
   try {
-    const folderPath = 'commands';
-    const folderFiles = fs.readdirSync(folderPath);
+    const folderPath = 'lib/commands';
+    const folderFiles = fs.readdirSync(folderPath).filter((file) => {
+      return file.includes('.js');
+    });
 
     console.log('Loading bot commands.');
 
     for (const file of folderFiles) {
       const { default: command } = await import(`../commands/${file}`);
-      commandRegistry.push(command.data.toJSON() as Command);
+      const parsedCommand = commandSchema.parse(command);
+      commandRegistry.push(parsedCommand.data.toJSON());
     }
 
     console.log('Commands loaded succefully.');

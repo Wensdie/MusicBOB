@@ -1,37 +1,26 @@
-import {
-  CacheType,
-  ChatInputCommandInteraction,
-  Guild,
-  GuildMember,
-  GuildMFALevel,
-  SlashCommandBuilder,
-} from 'discord.js';
-import {
-  AudioPlayerStatus,
-  createAudioPlayer,
-  joinVoiceChannel,
-  VoiceConnectionStatus,
-} from '@discordjs/voice';
-import bot from '../bot.js';
-import song from '../interfaces/song.js';
+import { ChatInputCommandInteraction, GuildMember, SlashCommandBuilder } from 'discord.js';
+import { AudioPlayerStatus } from '@discordjs/voice';
+import { Bot } from '../Bot.js';
 
 const clear = {
   data: new SlashCommandBuilder().setName('clear').setDescription('Clear queue and current song.'),
 
-  async execute(interaciton: ChatInputCommandInteraction) {
+  async execute(interaciton: ChatInputCommandInteraction): Promise<void> {
     if (!(interaciton.member as GuildMember).voice.channelId) {
       await interaciton.reply({ content: 'You have to join voice chat first.', ephemeral: true });
       return;
     }
 
-    if (!bot.services.MusicPlayer) {
+    const bot = Bot.getInstance();
+
+    if (!bot.discordClient.services.MusicPlayer) {
       await interaciton.reply({ content: 'MusicPlayer is not active.', ephemeral: true });
       return;
     }
 
-    if (bot.services.MusicPlayer) {
+    if (bot.discordClient.services.MusicPlayer) {
       if (
-        bot.services.MusicPlayer.getConnection().joinConfig.channelId !==
+        bot.discordClient.services.MusicPlayer.getConnection().joinConfig.channelId !==
         (interaciton.member as GuildMember).voice.channelId
       ) {
         await interaciton.reply({
@@ -42,16 +31,20 @@ const clear = {
       }
 
       if (
-        bot.services.MusicPlayer.getPlayer().state.status === AudioPlayerStatus.Idle &&
-        bot.services.MusicPlayer.getQueueLength() === 0
+        bot.discordClient.services.MusicPlayer.getPlayer().state.status ===
+          AudioPlayerStatus.Idle &&
+        bot.discordClient.services.MusicPlayer.getQueueLength() === 0
       ) {
         await interaciton.reply({ content: 'Queue is already empty.', ephemeral: true });
         return;
       }
 
-      if (bot.services.MusicPlayer.getPlayer().state.status === AudioPlayerStatus.Playing) {
-        bot.services.MusicPlayer.clearQueue();
-        bot.services.MusicPlayer.skipSong();
+      if (
+        bot.discordClient.services.MusicPlayer.getPlayer().state.status ===
+        AudioPlayerStatus.Playing
+      ) {
+        bot.discordClient.services.MusicPlayer.clearQueue();
+        bot.discordClient.services.MusicPlayer.skipSong();
         await interaciton.reply({ content: 'Queue cleared.' });
       }
     }

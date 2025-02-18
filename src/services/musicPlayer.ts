@@ -1,10 +1,4 @@
-import {
-  APIActionRowComponent,
-  CacheType,
-  ChatInputCommandInteraction,
-  Guild,
-  GuildMember,
-} from 'discord.js';
+import { ChatInputCommandInteraction, GuildMember } from 'discord.js';
 import ytdl from 'ytdl-core';
 import {
   AudioPlayer,
@@ -12,21 +6,19 @@ import {
   createAudioPlayer,
   createAudioResource,
   joinVoiceChannel,
-  JoinVoiceChannelOptions,
   VoiceConnection,
 } from '@discordjs/voice';
-import Service from '../interfaces/service.js';
-import Song from '../interfaces/song.js';
+import Song from '../types/song.js';
 
-class MusicPlayer implements Service {
+class MusicPlayer {
   public name = 'MusicPlayer';
   private queue: Song[] = [];
   private readonly audioPlayer: AudioPlayer;
-  private readonly connection!: VoiceConnection;
+  public readonly connection!: VoiceConnection;
   private songNow: Song;
-  public timer: any;
+  public timer: NodeJS.Timeout | undefined;
 
-  constructor(interaciton: ChatInputCommandInteraction) {
+  constructor(interaciton?: ChatInputCommandInteraction) {
     this.songNow = {
       name: 'none',
       url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
@@ -34,80 +26,97 @@ class MusicPlayer implements Service {
     };
 
     this.audioPlayer = createAudioPlayer();
-    if (interaciton.member && interaciton.guild) {
-      const guildMember = interaciton.member as GuildMember;
-      const chnID = guildMember.voice.channelId;
-      const glID = guildMember.guild.id;
-      if (chnID && glID) {
-        this.connection = joinVoiceChannel({
-          channelId: chnID,
-          guildId: glID,
-          adapterCreator: interaciton.guild.voiceAdapterCreator,
-        });
+    // if (interaciton.member && interaciton.guild) {
+    //   const guildMember = interaciton.member as GuildMember;
+    //   const chnID = guildMember.voice.channelId;
+    //   const glID = guildMember.guild.id;
+    //   if (chnID && glID) {
+    //     this.connection = joinVoiceChannel({
+    //       channelId: chnID,
+    //       guildId: glID,
+    //       adapterCreator: interaciton.guild.voiceAdapterCreator,
+    //     });
 
-        this.audioPlayer.on(AudioPlayerStatus.Idle, async () => {
-          if (interaciton.channel) {
-            if (this.getQueueLength() > 0) {
-              const song = this.getNextSongData();
-              this.playSong(interaciton);
-              if (song) {
-                clearTimeout(this.timer);
-                await interaciton.channel.send({
-                  content: `Playing: ${song.name} - ${song.lenght}`,
-                });
-              }
-            } else {
-              await interaciton.channel.send({ content: 'No more songs left.' });
-              this.timer = setTimeout(() => {
-                if (interaciton.channel) {
-                  interaciton.channel.send('5 min without playing music, leaving channel. Bajo!');
-                }
-                this.connection.disconnect();
-              }, 300000);
-            }
-          }
-        });
-      }
-    }
+    //     this.audioPlayer.on(AudioPlayerStatus.Idle, () => {
+    //       if (interaciton.channel) {
+    //         if (this.getQueueLength() > 0) {
+    //           const song = this.getNextSongData();
+    //           this.playSong(interaciton).catch((e: unknown) => {
+    //             console.error(e);
+    //           });
+    //           if (song) {
+    //             clearTimeout(this.timer);
+    //             interaciton.channel
+    //               .send({
+    //                 content: `Playing: ${song.name} - ${song.lenght}`,
+    //               })
+    //               .catch((e: unknown) => {
+    //                 console.error(e);
+    //               });
+    //           }
+    //         } else {
+    //           interaciton.channel.send({ content: 'No more songs left.' }).catch((e: unknown) => {
+    //             console.error(e);
+    //           });
+
+    //           this.timer = setTimeout(() => {
+    //             if (interaciton.channel) {
+    //               interaciton.channel
+    //                 .send('5 min without playing music, leaving channel. Bajo!')
+    //                 .catch((e: unknown) => {
+    //                   console.error(e);
+    //                 });
+    //             }
+    //             this.connection.disconnect();
+    //           }, 300000);
+    //         }
+    //       }
+    //     });
+    //   }
+    // }
   }
 
-  getPlayer() {
+  public getPlayer(): AudioPlayer {
     return this.audioPlayer;
   }
 
-  getConnection() {
+  public getConnection(): VoiceConnection {
     return this.connection;
   }
 
-  getSongNow() {
+  public getSongNow(): Song {
     return this.songNow;
   }
 
-  getLastSong() {
-    return this.queue[this.queue.length - 1];
+  public getLastSong(): Song {
+    const lastSong = this.queue[this.queue.length - 1];
+    if (!lastSong) {
+      throw new Error('No song left in queue.');
+    }
+    return lastSong;
   }
 
-  getQueue() {
+  public getQueue(): Song[] {
     return this.queue;
   }
 
-  getQueueLength() {
+  public getQueueLength(): number {
     return this.queue.length;
   }
 
-  skipSong() {
+  public skipSong(): void {
     this.audioPlayer.stop();
   }
 
-  setSubscription() {
+  public setSubscription(): void {
     this.connection.subscribe(this.audioPlayer);
   }
 
-  clearQueue() {
+  public clearQueue(): void {
     this.queue = [];
   }
 
-  async addSong(url: string) {
+  public async addSong(url: string): Promise<void> {
     const { title, lenghtS } = await ytdl.getInfo(url).then((info) => {
       return { title: info.videoDetails.title, lenghtS: info.videoDetails.lengthSeconds };
     });
@@ -121,13 +130,14 @@ class MusicPlayer implements Service {
     this.queue.push(song);
   }
 
-  getNextSongData() {
+  public getNextSongData(): Song | undefined {
     if (this.queue.length > 0) {
       return this.queue[0];
     }
+    return undefined;
   }
 
-  playSong(interaciton: ChatInputCommandInteraction) {
+  public async playSong(interaciton: ChatInputCommandInteraction): Promise<void> {
     const song = this.queue.shift();
     if (song) {
       const url = song.url;
@@ -137,9 +147,10 @@ class MusicPlayer implements Service {
           ytdl(url, { filter: 'audioonly', highWaterMark: 1 << 25 }),
         );
         this.audioPlayer.play(songResource);
-      } catch (er) {
+      } catch (er: unknown) {
         if (interaciton.channel) {
-          interaciton.channel.send('Video was not found.');
+          console.log(`Error occured while fetching song. Error:\n${er}`);
+          await interaciton.channel.send(`Error occured while fetching song. Error:\n${er}`);
         }
       }
     }

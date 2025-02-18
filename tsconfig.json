@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-     "outDir": "lib",
-      "module": "CommonJS",
+      "outDir": "lib",
+      "module": "ESNext",
       "moduleResolution": "node",
-      "target": "ES2022",
+      "target": "ESNext",
       "lib": ["ES2022"],
       "esModuleInterop": true,
       "resolveJsonModule": true,
-      "allowSyntheticDefaultImports": true, 
+      "allowSyntheticDefaultImports": true,
       "declaration": true,
       "pretty": true,
       "newLine": "lf",
@@ -23,6 +23,6 @@
       "noEmitOnError": true,
       "useDefineForClassFields": true,
       "forceConsistentCasingInFileNames": true,
-      "skipLibCheck": true
+      "skipLibCheck": true,
   }
 }

@@ -6,7 +6,7 @@ import {
 } from 'discord.js';
 import { Bot } from '../Bot.js';
 import shuffleArray from '../functions/shuffleArray.js';
-import MemberTeam from '../interfaces/memberTeam.js';
+import MemberTeam from '../types/memberTeam.js';
 
 const teamup = {
   data: new SlashCommandBuilder()
@@ -27,8 +27,8 @@ const teamup = {
       (interaciton.member as GuildMember).voice.channel as VoiceBasedChannel
     ).members.filter(
       (user) =>
-        !bot.discordClient.services.teams.getIgnore().includes(user.displayName) &&
-        !bot.discordClient.services.teams.getIgnore().includes(user.nickname) &&
+        !bot.discordClient.services.Teams.getIgnore().includes(user.displayName) &&
+        !bot.discordClient.services.Teams.getIgnore().includes(user.nickname ?? '') &&
         !(user.displayName === 'MusicBOB'),
     );
 
@@ -71,17 +71,17 @@ const teamup = {
     for (const member of members) {
       membersTeams.push({
         name: member[1].displayName,
-        team: numbers[i],
+        team: numbers[i] ?? 0,
       });
       i++;
     }
 
     let message = '';
 
-    for (let i = 1; i <= amount; i++) {
-      message += `Team ${i}:\n`;
+    for (let k = 1; k <= amount; k++) {
+      message += `Team ${k}:\n`;
       for (const member of membersTeams) {
-        if (member.team == i) {
+        if (member.team === k) {
           message += `⦿ ${member.name}\n`;
         }
       }
