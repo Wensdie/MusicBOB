@@ -9,7 +9,7 @@
     "lint": "eslint --fix .",
     "register": "npm run build && node ..\\lib\\functions\\registerCommands.js"
   },
-  "author": "Maciej Malinowski",
+  "author": "Maciej Malinowski, Błażej Bareja",
   "license": "ISC",
   "devDependencies": {
     "typescript-eslint": "8.20.0",
