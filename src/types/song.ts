@@ -1,7 +1,7 @@
 type Song = {
   name: string;
   url: string;
-  lenght: string;
+  length: string;
 };
 
 export default Song;

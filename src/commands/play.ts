@@ -1,9 +1,6 @@
-import { ChatInputCommandInteraction, GuildMember, SlashCommandBuilder } from 'discord.js';
-import ytdl from 'ytdl-core';
-import { AudioPlayerStatus, VoiceConnectionStatus } from '@discordjs/voice';
-import { Bot } from '../Bot.js';
-import MusicPlayer from '../services/musicPlayer.js';
-
+import { ChatInputCommandInteraction, GuildMember, SlashCommandBuilder, MessageFlags, TextBasedChannel, TextChannel, } from 'discord.js';
+import { AudioPlayerStatus, joinVoiceChannel, VoiceConnectionStatus } from '@discordjs/voice';
+import { Bot } from '../bot.js';
 const play = {
   data: new SlashCommandBuilder()
     .setName('play')
@@ -11,118 +8,97 @@ const play = {
     .addStringOption((option) =>
       option.setName('url').setDescription('Plays video from youtube.').setRequired(true),
     ),
-  async execute(interaciton: ChatInputCommandInteraction): Promise<void> {
-    if (!(interaciton.member as GuildMember).voice.channelId) {
-      await interaciton.reply({ content: 'You have to join voice chat first.', ephemeral: true });
+
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    if (!(interaction.member as GuildMember).voice.channelId) {
+      await interaction.reply({ content: 'You have to join voice chat first.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+    const bot = Bot.getInstance();
+    const url = interaction.options.getString('url');
+    const urlPattern = /^(https:\/\/www\.youtube\.com\/watch).*/;
+    const musicPlayer = bot.discordClient.services.MusicPlayer;
+    const timer = musicPlayer.timer
+    musicPlayer.channel = bot.discordClient.channels.cache.get(interaction.channelId)! as TextChannel;
+
+//URL Check
+    if (!url?.match(urlPattern)) {
+        await interaction.reply({ content: 'Invalid URL.', ephemeral: true });
+        return;
+    }
+//connect to Vchannel and play
+await interaction.deferReply();
+await musicPlayer.addSong(url);
+clearTimeout(musicPlayer.timer);
+//Connection does not exist
+    if(!musicPlayer.getConnection()){
+      if(!(interaction.member && interaction.guild)){
+        throw Error("Invalid interaction properties");
+      }
+
+      const guildMember = interaction.member as GuildMember;
+      const channelID = guildMember.voice.channelId;
+      const guildID = guildMember.guild.id;
+      if(!(channelID && guildID)){
+        throw Error("Invalid channel Id or guild id ");
+      }
+
+      musicPlayer.connection = joinVoiceChannel({
+        channelId: channelID,
+        guildId: guildID,
+        adapterCreator: interaction.guild.voiceAdapterCreator,
+      });
+      musicPlayer.setSubscription();
+      musicPlayer.audioPlayer.on(AudioPlayerStatus.Idle, async ()=>{
+      if(!interaction.channel){
+        throw Error("Invalid interaction channel");
+      }
+      if(musicPlayer.getQueueLength()>0){
+        const song = musicPlayer.getNextSongData();
+        musicPlayer.playSong(interaction);
+        const songNow = musicPlayer.getSongNow();
+        (musicPlayer.channel as TextChannel).send(`Playing: ${songNow.name} - ${songNow.length}`);
+        return;
+      }
+      });
+      await musicPlayer.playSong(interaction);
+      const songNow = musicPlayer.getSongNow();
+      await interaction.editReply({
+        content: `Playing: ${songNow.name} - ${songNow.length}`,
+      });
       return;
     }
 
-    const bot = Bot.getInstance();
-
-    if (bot.discordClient.services.MusicPlayer) {
-      const mP = bot.discordClient.services.MusicPlayer;
-      const timer = mP.timer;
-      if (
-        mP.getConnection().joinConfig.channelId !==
-        (interaciton.member as GuildMember).voice.channelId
-      ) {
-        await interaciton.reply({
-          content: 'Bot is arleady connected on other channel.',
-          ephemeral: true,
-        });
-        return;
-      }
-
-      const url = interaciton.options.getString('url');
-      const urlPattern = /^(https:\/\/www\.youtube\.com\/watch).*/;
-
-      if (!url?.match(urlPattern)) {
-        await interaciton.reply({ content: 'Invalid URL.', ephemeral: true });
-        return;
-      }
-
-      try {
-        await ytdl.getInfo(url).then((info) => {
-          return info.videoDetails.age_restricted;
-        });
-      } catch (er) {
-        await interaciton.reply({ content: `Error: ${er}`, ephemeral: true });
-        return;
-      }
-
-      await mP.addSong(url);
-      const song = mP.getLastSong();
-      if (mP.getPlayer().state.status === AudioPlayerStatus.Playing) {
-        if (timer instanceof NodeJS.Timeout) {
-          clearTimeout(timer);
-        }
-        await interaciton.reply({ content: `Added to queue: ${song.name} - ${song.lenght}` });
-      } else if (mP.getQueueLength() > 0) {
-        if (timer instanceof NodeJS.Timeout) {
-          clearTimeout(timer);
-        }
-        const nextSong = mP.getNextSongData();
-        await mP.playSong(interaciton);
-        mP.setSubscription();
-        if (nextSong) {
-          await interaciton.reply({ content: `Playing: ${nextSong.name} - ${nextSong.lenght}` });
-        }
-      }
-    } else {
-      const url = interaciton.options.getString('url');
-      const urlPattern = /^(https:\/\/www\.youtube\.com\/watch).*/;
-
-      if (!url?.match(urlPattern)) {
-        await interaciton.reply({ content: 'Invalid URL.', ephemeral: true });
-        return;
-      }
-
-      bot.discordClient.services.MusicPlayer = new MusicPlayer(interaciton);
-      const mP = bot.discordClient.services.MusicPlayer;
-
-      mP.getConnection().on(VoiceConnectionStatus.Disconnected, () => {
-        const timer = mP.timer;
-        if (timer instanceof NodeJS.Timeout) {
-          clearTimeout(timer);
-        }
-        mP.connection.destroy();
+//connection exists
+{
+    if(musicPlayer.getConnection()!.joinConfig.channelId !== (interaction.member as GuildMember).voice.channelId){
+        await interaction.reply({
+        content: 'Bot is already connected on other channel.',
+        ephemeral: true,
       });
-
-      try {
-        await ytdl.getInfo(url).then((info) => {
-          return info.videoDetails.age_restricted;
-        });
-      } catch (er: unknown) {
-        console.log(er);
-        await interaciton.reply({
-          content: 'Can not play age restricted video. Sorry :(',
-          ephemeral: true,
-        });
-        return;
-      }
-
-      await mP.addSong(url);
-      const song = mP.getLastSong();
-      if (mP.getPlayer().state.status === AudioPlayerStatus.Playing) {
-        const timer = mP.timer;
-        if (timer instanceof NodeJS.Timeout) {
-          clearTimeout(timer);
-        }
-        await interaciton.reply({ content: `Added to queue: ${song.name} - ${song.lenght}` });
-      } else if (mP.getQueueLength() > 0) {
-        const timer = mP.timer;
-        if (timer instanceof NodeJS.Timeout) {
-          clearTimeout(timer);
-        }
-        const nextSong = mP.getNextSongData();
-        await mP.playSong(interaciton);
-        mP.setSubscription();
-        if (nextSong) {
-          await interaciton.reply({ content: `Playing: ${nextSong.name} - ${nextSong.lenght}` });
-        }
-      }
+      return;
     }
-  },
-};
 
+    if(musicPlayer.audioPlayer.state.status === AudioPlayerStatus.Playing){
+      const songLast = musicPlayer.getLastSong();
+      await interaction.editReply({
+        content: `Added to queue: ${songLast.name} - ${songLast.length}`,
+      });
+      return;
+    }
+
+    if(musicPlayer.audioPlayer.state.status === AudioPlayerStatus.Idle){
+      const song = musicPlayer.getNextSongData();
+      musicPlayer.playSong(interaction);
+      const songNow = musicPlayer.getSongNow();
+      await interaction.editReply({
+        content: `Playing: ${songNow.name} - ${songNow.length}`,
+      });
+      return;
+    }
+  }
+}
+}
 export default play;

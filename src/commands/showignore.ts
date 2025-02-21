@@ -1,13 +1,16 @@
 import { ChatInputCommandInteraction, GuildMember, SlashCommandBuilder } from 'discord.js';
-import { Bot } from '../Bot.js';
+import { Bot } from '../bot.js';
 import Teams from '../services/teams.js';
 
 const showignore = {
-  data: new SlashCommandBuilder().setName('showignore').setDescription('Show ingored users.'),
+  data: new SlashCommandBuilder().setName('showignore').setDescription('Show ignored users.'),
 
-  async execute(interaciton: ChatInputCommandInteraction): Promise<void> {
-    if (!(interaciton.member as GuildMember).voice.channelId) {
-      await interaciton.reply({ content: 'You have to join voice chat first.', ephemeral: true });
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+
+    if (!(interaction.member as GuildMember).voice.channelId) {
+      await interaction.reply({
+        content: 'You have to join voice chat first.',
+        ephemeral: true });
       return;
     }
 
@@ -24,9 +27,13 @@ const showignore = {
         ignoringTab += `❌ ${ign}\n`;
       }
 
-      await interaciton.reply({ content: ignoringTab });
+      await interaction.reply({
+        content: ignoringTab
+      });
     } else {
-      await interaciton.reply({ content: 'No one is ignored right now.' });
+      await interaction.reply({
+        content: 'No one is ignored right now.'
+      });
     }
   },
 };

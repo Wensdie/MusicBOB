@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { Bot } from './Bot.js';
+import { Bot } from './bot.js';
 
 (async (): Promise<void> => {
   dotenv.config();

@@ -85,7 +85,6 @@ export class Bot {
       Teams: new Teams(),
       MusicPlayer: new MusicPlayer(),
     };
-
     console.log('Services loaded succefully.');
   }
 }

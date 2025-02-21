@@ -1,6 +1,5 @@
 import { ChatInputCommandInteraction, GuildMember, SlashCommandBuilder } from 'discord.js';
-import { Bot } from '../Bot.js';
-import Teams from '../services/teams.js';
+import { Bot } from '../bot.js';
 
 const ignore = {
   data: new SlashCommandBuilder()
@@ -9,21 +8,20 @@ const ignore = {
     .addStringOption((option) =>
       option.setName('user').setDescription('User to ignore.').setRequired(true),
     ),
-  async execute(interaciton: ChatInputCommandInteraction): Promise<void> {
-    if (!(interaciton.member as GuildMember).voice.channelId) {
-      await interaciton.reply({ content: 'You have to join voice chat first.', ephemeral: true });
+
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+
+    if (!(interaction.member as GuildMember).voice.channelId) {
+      await interaction.reply({
+        content: 'You have to join voice chat first.',
+        ephemeral: true });
       return;
     }
 
     const bot = Bot.getInstance();
-
-    if (!bot.discordClient.services.Teams) {
-      bot.discordClient.services.Teams = new Teams();
-    }
-
-    const user = interaciton.options.getString('user');
+    const user = interaction.options.getString('user');
     bot.discordClient.services.Teams.addIgnore(user ?? '');
-    await interaciton.reply({ content: `Ignoring: ${user}` });
+    await interaction.reply({ content: `Ignoring: ${user}` });
   },
 };
 
