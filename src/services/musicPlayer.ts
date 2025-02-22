@@ -12,9 +12,7 @@ import {
 import Song from '../types/song.js';
 import { Readable } from 'stream';
 import fs from 'node:fs';
-import SpotifyFetcher from 'spotifydl-core/dist/Spotify.js';
 class MusicPlayer {
-  public Spotify: SpotifyFetcher | undefined;
   public agent: ytdl.Agent | undefined;
   public channel: TextChannel | undefined;
   private audioStream: Readable | undefined;
