@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
-import { Bot } from './Bot.js';
-
+import { Bot } from './bot.js';
 (async (): Promise<void> => {
   dotenv.config();
 
@@ -10,7 +9,6 @@ import { Bot } from './Bot.js';
   if (!DISCORD_BOT_TOKEN || !DISCORD_BOT_ID) {
     throw new Error('Cannot access Discord Bot token or id.');
   }
-
   const bot = Bot.getInstance(DISCORD_BOT_TOKEN, DISCORD_BOT_ID);
 
   await bot.authorize();

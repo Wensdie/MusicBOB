@@ -4,7 +4,7 @@ import { commandSchema } from './schemas/commandSchema.js';
 import MusicPlayer from './services/musicPlayer.js';
 import Teams from './services/teams.js';
 import { Command } from './types/command.js';
-
+import Spotify from 'spotifydl-core';
 export class Bot {
   public readonly discordClient: Client;
   private static instance: Bot;
@@ -85,7 +85,6 @@ export class Bot {
       Teams: new Teams(),
       MusicPlayer: new MusicPlayer(),
     };
-
     console.log('Services loaded succefully.');
   }
 }

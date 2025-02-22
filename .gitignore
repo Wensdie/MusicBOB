@@ -1,7 +1,7 @@
 .vs
 .env
 lib/
-
+cookies.json
 # Logs
 logs
 *.log

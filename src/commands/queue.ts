@@ -1,42 +1,42 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { AudioPlayerStatus } from '@discordjs/voice';
-import { Bot } from '../Bot.js';
+import { Bot } from '../bot.js';
 import Song from '../types/song.js';
 
 const queue = {
-  data: new SlashCommandBuilder().setName('queue').setDescription('Showing queque.'),
+  data: new SlashCommandBuilder()
+  .setName('queue')
+  .setDescription('Showing queue.'),
 
-  async execute(interaciton: ChatInputCommandInteraction): Promise<void> {
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const bot = Bot.getInstance();
-
-    if (!bot.discordClient.services.MusicPlayer) {
-      await interaciton.reply({ content: 'MusicPlayer is not active.', ephemeral: true });
-      return;
-    }
-
+//Queue exists
     if (bot.discordClient.services.MusicPlayer.getQueue()) {
-      const mP = bot.discordClient.services.MusicPlayer;
+      const musicPlayer = bot.discordClient.services.MusicPlayer;
+      let queueEmpty = ""
+      if (musicPlayer.getQueueLength() === 0) {
+        console.log("Invoked bot/queue when queue empty");
+        queueEmpty = "Queue is empty.";
 
-      if (mP.getQueueLength() === 0 && mP.getPlayer().state.status === AudioPlayerStatus.Idle) {
-        await interaciton.reply({ content: 'Queue is empty.', ephemeral: true });
-        return;
       }
 
-      const songNow = mP.getSongNow();
-
-      let queueString = `Playing: ${songNow.name} - ${songNow.lenght}`;
-
-      if (mP.getQueueLength() > 0) {
-        queueString += '\n\n';
-        const songs: Song[] = mP.getQueue();
+      const songNow = musicPlayer.getSongNow();
+      const queuePlayingNow = `Playing: ${songNow.name} - ${songNow.length}`;
+      let queueList = "";
+      console.log("Successfully invoked bot/queue now playing: " + songNow.name + " length: " + songNow.length + " in queue: ");
+      if (musicPlayer.getQueueLength() > 0) {
+        queueList += '\n\n';
+        const songs: Song[] = musicPlayer.getQueue();
         let i = 1;
         for (const song of songs) {
-          queueString += `${i}) ${song.name} - ${song.lenght}\n`;
+          queueList += `${i}) ${song.name} - ${song.length}\n`;
           i++;
         }
       }
 
-      await interaciton.reply({ content: queueString });
+      console.log(queuePlayingNow);
+      console.log("\n" + (queueEmpty ?? queueList ));
+      await interaction.reply({ content: queuePlayingNow + "\n"+ (queueEmpty ?? queueList) });
     }
   },
 };
