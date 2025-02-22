@@ -12,7 +12,9 @@ import {
 import Song from '../types/song.js';
 import { Readable } from 'stream';
 import fs from 'node:fs';
+import SpotifyFetcher from 'spotifydl-core/dist/Spotify.js';
 class MusicPlayer {
+  public Spotify: SpotifyFetcher | undefined;
   public agent: ytdl.Agent | undefined;
   public channel: TextChannel | undefined;
   private audioStream: Readable | undefined;
@@ -38,7 +40,8 @@ class MusicPlayer {
         this.timer = setTimeout(() => {
             this.connection?.destroy();
             this.connection = undefined;
-            (this.channel as TextChannel).send(`Disconnecting, Bajo`);
+          (this.channel as TextChannel).send(`Disconnecting, Bajo`);
+          console.log("Disconnecting");
         }, 60000)
       }
     });
@@ -128,7 +131,7 @@ class MusicPlayer {
       this.audioStream =  ytdl(url, { filter: 'audioonly', highWaterMark: 1 << 25, agent: this.agent});
     //on error console log
       this.audioStream.on("error", () => {
-        console.error("Child process error");
+        console.error("audioStream interrupted, source stopped providing chunks");
       });
       if (!this.audioStream) return;
       const audioResource = createAudioResource((this.audioStream), {

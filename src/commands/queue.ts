@@ -13,27 +13,30 @@ const queue = {
 //Queue exists
     if (bot.discordClient.services.MusicPlayer.getQueue()) {
       const musicPlayer = bot.discordClient.services.MusicPlayer;
-
-      if (musicPlayer.getQueueLength() === 0 && musicPlayer.getPlayer().state.status === AudioPlayerStatus.Idle) {
+      let queueEmpty = ""
+      if (musicPlayer.getQueueLength() === 0) {
         console.log("Invoked bot/queue when queue empty");
-        await interaction.reply({ content: 'Queue is empty.', ephemeral: true });
-        return;
+        queueEmpty = "Queue is empty.";
+
       }
 
       const songNow = musicPlayer.getSongNow();
-      let queueString = `Playing: ${songNow.name} - ${songNow.length}`;
+      const queuePlayingNow = `Playing: ${songNow.name} - ${songNow.length}`;
+      let queueList = "";
       console.log("Successfully invoked bot/queue now playing: " + songNow.name + " length: " + songNow.length + " in queue: ");
       if (musicPlayer.getQueueLength() > 0) {
-        queueString += '\n\n';
+        queueList += '\n\n';
         const songs: Song[] = musicPlayer.getQueue();
         let i = 1;
         for (const song of songs) {
-          queueString += `${i}) ${song.name} - ${song.length}\n`;
+          queueList += `${i}) ${song.name} - ${song.length}\n`;
           i++;
         }
       }
-      console.log(queueString);
-      await interaction.reply({ content: queueString });
+
+      console.log(queuePlayingNow);
+      console.log("\n" + (queueEmpty ?? queueList ));
+      await interaction.reply({ content: queuePlayingNow + "\n"+ (queueEmpty ?? queueList) });
     }
   },
 };
