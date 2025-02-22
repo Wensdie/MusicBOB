@@ -12,6 +12,7 @@ const ignore = {
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
 
     if (!(interaction.member as GuildMember).voice.channelId) {
+      console.log("Invoked bot/ignore without connecting to channel")
       await interaction.reply({
         content: 'You have to join voice chat first.',
         ephemeral: true });
@@ -22,6 +23,7 @@ const ignore = {
     const user = interaction.options.getString('user');
     bot.discordClient.services.Teams.addIgnore(user ?? '');
     await interaction.reply({ content: `Ignoring: ${user}` });
+    console.log(`Successfully bot/ignore ignoring: " ${user}`);
   },
 };
 

@@ -34,11 +34,27 @@ class MusicPlayer {
       if(oldState.status === AudioPlayerStatus.Playing && newState.status === AudioPlayerStatus.Idle && this.getQueueLength() == 0){
         (this.channel as TextChannel).send(`Queue is empty`);
         (this.channel as TextChannel).send(`Will disconnect after 1 minute in case of request absence `);
-        this.timer = setTimeout(()=>{
+        console.log("Bot has nothing to play, will disconnect in 1 minute without being provided new song")
+        this.timer = setTimeout(() => {
             this.connection?.destroy();
             this.connection = undefined;
             (this.channel as TextChannel).send(`Disconnecting, Bajo`);
         }, 60000)
+      }
+    });
+
+    this.audioPlayer.on(AudioPlayerStatus.Idle, async () => {
+      if (!this.channel) {
+        console.log("Error fetching interaction channel info");
+        throw Error("Invalid interaction channel");
+      }
+      if (this.getQueueLength() > 0) {
+        const song = this.getNextSongData();
+        this.playSong(this.channel);
+        const songNow = this.getSongNow();
+        console.log("Successfully Invoked MusicPlayer");
+        (this.channel as TextChannel).send(`Playing: ${songNow.name} - ${songNow.length}`);
+        return;
       }
     });
   }
@@ -58,6 +74,7 @@ class MusicPlayer {
   public getLastSong(): Song {
     const lastSong = this.queue[this.queue.length - 1];
     if (!lastSong) {
+      console.log("Tried to getLastSong() but no more songs are left in queue");
       throw new Error('No song left in queue.');
     }
     return lastSong;
@@ -102,7 +119,7 @@ class MusicPlayer {
     });
   }
 
-  async playSong(interaction: ChatInputCommandInteraction) {
+  async playSong(channel: TextChannel) {
     const song = this.queue.shift();
     if (!song)return;
     const url = song.url;
@@ -113,15 +130,16 @@ class MusicPlayer {
       this.audioStream.on("error", () => {
         console.error("Child process error");
       });
-      if (!this.audioStream)return;
+      if (!this.audioStream) return;
       const audioResource = createAudioResource((this.audioStream), {
         inputType: StreamType.Arbitrary,
         inlineVolume: true,
       });
+
       this.audioPlayer.play(audioResource);
     } catch (er) {
-      if (interaction.channel) {
-        (interaction.channel as TextChannel).send(`Video not found  ${er}`);
+      if (channel) {
+        (channel as TextChannel).send(`Error while fetching Video:  ${er}`);
       }
     }
   }

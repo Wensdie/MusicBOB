@@ -1,9 +1,10 @@
-const eslintJs = require("@eslint/js");
-const tseslint = require("typescript-eslint");
-const perfectionist = require("eslint-plugin-perfectionist");
-const eslintPluginPrettierRecommended = require("eslint-plugin-prettier/recommended");
+// @ts-ignore
+const { configs } = pkg;
+import { config, configs as _configs, plugin, parser as _parser } from "typescript-eslint";
+import perfectionist from "eslint-plugin-perfectionist";
+import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 
-module.exports = tseslint.config(
+export default config(
   {
     ignores: [
       "dist/**",
@@ -19,17 +20,17 @@ module.exports = tseslint.config(
       "*.lock",
     ],
   },
-  eslintJs.configs.recommended,
-  ...tseslint.configs.strictTypeChecked,
-  ...tseslint.configs.stylisticTypeChecked,
+  configs.recommended,
+  ..._configs.strictTypeChecked,
+  ..._configs.stylisticTypeChecked,
   eslintPluginPrettierRecommended,
   {
     plugins: {
-      "@typescript-eslint": tseslint.plugin,
+      "@typescript-eslint": plugin,
       perfectionist,
     },
     languageOptions: {
-      parser: tseslint.parser,
+      parser: _parser,
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: "module",
@@ -100,10 +101,10 @@ module.exports = tseslint.config(
       "@typescript-eslint/no-unused-vars": [
         "warn",
         {
-          varsIgnorePattern: "_", 
-          argsIgnorePattern: "_", 
-          ignoreRestSiblings: true, 
-          caughtErrors: "all", 
+          varsIgnorePattern: "_",
+          argsIgnorePattern: "_",
+          ignoreRestSiblings: true,
+          caughtErrors: "all",
         },
       ],
       "@typescript-eslint/no-unsafe-member-access": "off",
@@ -141,7 +142,7 @@ module.exports = tseslint.config(
       "@typescript-eslint/explicit-member-accessibility": [
         "error",
         {
-          overrides: { constructors: "no-public" }, 
+          overrides: { constructors: "no-public" },
         },
       ],
       "@typescript-eslint/explicit-module-boundary-types": "error",

@@ -9,6 +9,7 @@ const clear = {
 
 //wrong interaction channel
     if (!(interaction.member as GuildMember).voice.channelId) {
+      console.log("Invoked bot/clear without connecting to channel")
       await interaction.reply({
         content: 'You have to join voice chat first.',
         ephemeral: true });
@@ -16,18 +17,10 @@ const clear = {
     }
 
     const bot = Bot.getInstance();
-//MusicPLayer instance is undefined
-    if (!bot.discordClient.services.MusicPlayer) {
-      await interaction.reply({
-        content: 'MusicPlayer is not active.',
-        ephemeral: true });
-      return;
-    }
 //MusicPlayer exists
-    if (bot.discordClient.services.MusicPlayer) {
-
       //User on wrong channel
-      if (bot.discordClient.services.MusicPlayer.getConnection()!.joinConfig.channelId !== (interaction.member as GuildMember).voice.channelId) {
+    if (bot.discordClient.services.MusicPlayer.getConnection()!.joinConfig.channelId !== (interaction.member as GuildMember).voice.channelId) {
+        console.log("User invoked bot/clear when on different channel")
         await interaction.reply({
           content: 'You cannot clear queue on the other channel.',
           ephemeral: true,
@@ -35,19 +28,20 @@ const clear = {
         return;
       }
       //Queue empty
-      if (bot.discordClient.services.MusicPlayer.getPlayer().state.status === AudioPlayerStatus.Idle && bot.discordClient.services.MusicPlayer.getQueueLength() === 0) {
+    if (bot.discordClient.services.MusicPlayer.getQueueLength() === 0) {
+      console.log("Invoked bot/clear when queue empty");
         await interaction.reply({
           content: 'Queue is already empty.',
           ephemeral: true });
         return;
       }
       //Cleanse Queue
-      if (bot.discordClient.services.MusicPlayer.getPlayer().state.status === AudioPlayerStatus.Playing){
+    if (bot.discordClient.services.MusicPlayer.getPlayer().state.status === AudioPlayerStatus.Playing) {
+      console.log("Command successful queue cleared");
         bot.discordClient.services.MusicPlayer.clearQueue();
         bot.discordClient.services.MusicPlayer.skipSong();
         await interaction.reply({ content: 'Queue cleared.' });
       }
-    }
   },
 };
 

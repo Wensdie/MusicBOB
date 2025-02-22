@@ -18,6 +18,7 @@ const teamup = {
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
 
     if (!(interaction.member as GuildMember).voice.channelId) {
+      console.log("Invoked bot/teamup without connecting to channel")
       await interaction.reply({
         content: 'You have to join voice chat first.',
         ephemeral: true });
@@ -35,6 +36,7 @@ const teamup = {
     );
 
     if (members.size === 1) {
+      console.log("Invoked bot/teamup when alone on voice channel");
       await interaction.reply({
         content: 'For ever alone. :(',
         ephemeral: true });
@@ -49,6 +51,7 @@ const teamup = {
       ) {
         amount = Number(interaction.options.getString('amount'));
       } else {
+        console.log("Invoked bot/teamup with invalid team amount: "+ amount);
         await interaction.reply({
           content: 'Invalid team amount.',
           ephemeral: true });
@@ -91,7 +94,7 @@ const teamup = {
       }
       message += '\n\n';
     }
-
+    console.log("Successfully invoked bot/teamup with result: " + message);
     await interaction.reply({ content: message });
   },
 };
