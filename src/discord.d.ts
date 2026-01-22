@@ -1,11 +1,10 @@
 import { Collection } from 'discord.js';
-import MusicPlayer from './services/musicPlayer.js';
-import Teams from './services/teams.js';
-import type Command from './types/command.js';
+import { MusicPlayer, Teams } from './services';
+import type { Command } from './types';
 
 declare module 'discord.js' {
   interface Client {
     commands: Collection<string, Command>;
-    services: { Teams: Teams; MusicPlayer: MusicPlayer };
+    services: { Teams?: Teams; MusicPlayer?: MusicPlayer };
   }
 }

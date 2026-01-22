@@ -1,148 +1,148 @@
-import { ChatInputCommandInteraction, GuildMember, Interaction, TextChannel } from 'discord.js';
-import ytdl from '@distube/ytdl-core';
+import { TextChannel } from 'discord.js';
 import {
   AudioPlayer,
   AudioPlayerStatus,
   createAudioPlayer,
   createAudioResource,
-  joinVoiceChannel,
-  VoiceConnection,
   StreamType,
+  VoiceConnection,
 } from '@discordjs/voice';
-import Song from '../types/song.js';
-import { Readable } from 'stream';
-import fs from 'node:fs';
-class MusicPlayer {
-  public agent: ytdl.Agent | undefined;
-  public channel: TextChannel | undefined;
-  private audioStream: Readable | undefined;
-  private queue: Song[] = [];
-  public audioPlayer: AudioPlayer;
-  public connection: VoiceConnection | undefined;
-  private songNow: Song;
-  public timer: NodeJS.Timeout | undefined;
-  constructor() {
-    this.songNow = {
-      name: 'none',
-      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      length: '3:32',
-    };
-    this.agent = ytdl.createAgent(JSON.parse(fs.readFileSync("cookies.json",'utf-8')));
-    this.audioPlayer = createAudioPlayer();
-    this.connection = undefined;
-    this.audioPlayer.on("stateChange", (oldState, newState)=>{
-      if(oldState.status === AudioPlayerStatus.Playing && newState.status === AudioPlayerStatus.Idle && this.getQueueLength() == 0){
-        (this.channel as TextChannel).send(`Queue is empty`);
-        (this.channel as TextChannel).send(`Will disconnect after 1 minute in case of request absence `);
-        console.log("Bot has nothing to play, will disconnect in 1 minute without being provided new song")
-        this.timer = setTimeout(() => {
-            this.connection?.destroy();
-            this.connection = undefined;
-          (this.channel as TextChannel).send(`Disconnecting, Bajo`);
-          console.log("Disconnecting");
-        }, 60000)
-      }
-    });
+import { PassThrough } from 'stream';
+import { YTDLPlayer } from '../utilities';
+import type { ChildProcessWithoutNullStreams } from 'child_process';
+import type { Song } from '../types';
 
-    this.audioPlayer.on(AudioPlayerStatus.Idle, async () => {
-      if (!this.channel) {
-        console.log("Error fetching interaction channel info");
-        throw Error("Invalid interaction channel");
-      }
-      if (this.getQueueLength() > 0) {
-        const song = this.getNextSongData();
-        this.playSong(this.channel);
-        const songNow = this.getSongNow();
-        console.log("Successfully Invoked MusicPlayer");
-        (this.channel as TextChannel).send(`Playing: ${songNow.name} - ${songNow.length}`);
+export class MusicPlayer {
+  private static instance: MusicPlayer;
+  private readonly audioPlayer: AudioPlayer;
+  private readonly ytdlPlayer = new YTDLPlayer();
+  private audioStream?: ChildProcessWithoutNullStreams;
+  private connection?: VoiceConnection;
+  private channel: TextChannel;
+  private timer?: NodeJS.Timeout;
+  private queue: Song[] = [];
+  private songNow?: Song;
+
+  private constructor(channel: TextChannel) {
+    this.audioPlayer = createAudioPlayer();
+    this.channel = channel;
+
+    this.audioPlayer.on(AudioPlayerStatus.Idle, () => {
+      this.songNow = undefined;
+      if (!this.queue.length) {
+        this.startDisconnectTimer().catch((error: unknown) => {
+          const errorMessage = error instanceof Error ? error.message : error;
+          throw new Error(`Error while starting disconnect timer:\n${errorMessage}`);
+        });
         return;
       }
+      this.playNextSong().catch((error: unknown) => {
+        const errorMessage = error instanceof Error ? error.message : error;
+        throw new Error(`Error while sarting playing next song:\n${errorMessage}`);
+      });
     });
   }
 
-  public getPlayer(): AudioPlayer {
-    return this.audioPlayer;
-  }
-  public getConnection() {
-    return this.connection;
-  }
-  public getSongNow(): Song {
-    return this.songNow;
-  }
-  public setSubscription() {
-    this.connection!.subscribe(this.audioPlayer);
-  }
-  public getLastSong(): Song {
-    const lastSong = this.queue[this.queue.length - 1];
-    if (!lastSong) {
-      console.log("Tried to getLastSong() but no more songs are left in queue");
-      throw new Error('No song left in queue.');
+  public static getInstance(channel: TextChannel): MusicPlayer {
+    if (!MusicPlayer.instance) {
+      MusicPlayer.instance = new MusicPlayer(channel);
     }
-    return lastSong;
+    MusicPlayer.instance.channel = channel;
+
+    return MusicPlayer.instance;
+  }
+
+  public getCurrentStatus(): AudioPlayerStatus {
+    return this.audioPlayer.state.status;
   }
 
   public getQueue(): Song[] {
     return this.queue;
   }
 
-  public getQueueLength(): number {
-    return this.queue.length;
+  public getSongNow(): Song | undefined {
+    return this.songNow;
   }
 
-  public skipSong(): void {
-    this.audioPlayer.stop();
+  public getConnection(): VoiceConnection | undefined {
+    return this.connection;
+  }
+
+  public setConnection(connection: VoiceConnection): void {
+    this.connection = connection;
+    this.connection.subscribe(this.audioPlayer);
+  }
+
+  public setSubscription(): void {
+    this.connection?.subscribe(this.audioPlayer);
+  }
+
+  public async addSong(url: string): Promise<Song> {
+    const song = await this.ytdlPlayer.getMetadata(url);
+
+    this.queue.push(song);
+
+    if (
+      !this.audioPlayer.state.status ||
+      this.audioPlayer.state.status === AudioPlayerStatus.Idle
+    ) {
+      await this.playNextSong();
+    }
+
+    return song;
+  }
+
+  public skip(): void {
+    this.audioPlayer.stop(true);
   }
 
   public clearQueue(): void {
     this.queue = [];
+    this.skip();
   }
 
-  public getNextSongData() {
-    if (this.queue.length > 0) {
-      return this.queue[0];
-    }else{
-      return 0;
+  private async playNextSong(): Promise<void> {
+    this.clearDisconnectTimer();
+
+    this.songNow = this.queue.shift();
+    if (!this.songNow) {
+      return;
     }
-  }
 
-  async addSong(url: string) {
-      await ytdl.getBasicInfo(url, {agent:this.agent}).then((info: any) => {
-      const title = info.videoDetails.title;
-      const lengthS = info.videoDetails.lengthSeconds;
-      const lengthNumber = Number(lengthS);
-      const length = `${String(Math.floor(lengthNumber / 60))}:${String(lengthNumber % 60)}`;
-      const song: Song = {
-        name: title,
-        url,
-        length,
-      };
-      this.queue.push(song);
-    });
-  }
-
-  async playSong(channel: TextChannel) {
-    const song = this.queue.shift();
-    if (!song)return;
-    const url = song.url;
     try {
-      this.songNow = song;
-      this.audioStream =  ytdl(url, { filter: 'audioonly', highWaterMark: 1 << 25, agent: this.agent});
-    //on error console log
-      this.audioStream.on("error", () => {
-        console.error("audioStream interrupted, source stopped providing chunks");
-      });
-      if (!this.audioStream) return;
-      const audioResource = createAudioResource((this.audioStream), {
+      const passThrough = new PassThrough();
+      this.audioStream = this.ytdlPlayer.play(this.songNow.url, passThrough);
+      const resource = createAudioResource(passThrough, {
         inputType: StreamType.Arbitrary,
         inlineVolume: true,
       });
 
-      this.audioPlayer.play(audioResource);
-    } catch (er) {
-      if (channel) {
-        (channel as TextChannel).send(`Error while fetching Video:  ${er}`);
-      }
+      this.audioPlayer.play(resource);
+      await this.channel.send(`Playing: ${this.songNow.name} - ${this.songNow.length}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : error;
+      throw new Error(`Error while sending a message:\n${errorMessage}`);
+    }
+  }
+
+  private async startDisconnectTimer(): Promise<void> {
+    await this.channel.send('Queue empty. Disconnecting in 3 minutes if no new song is added.');
+    this.timer = setTimeout(() => {
+      this.connection?.destroy();
+      this.connection = undefined;
+      this.channel.send('Disconnecting, Bajo').catch((error: unknown) => {
+        const errorMessage = error instanceof Error ? error.message : error;
+        throw new Error(`Error while sending a message:\n${errorMessage}`);
+      });
+      console.log('[LOG] Disconnected due to inactivity.');
+    }, 180000);
+  }
+
+  private clearDisconnectTimer(): void {
+    if (this.timer) {
+      console.log('[LOG] New song added, clearing timeout.');
+      clearTimeout(this.timer);
+      this.timer = undefined;
     }
   }
 }
-export default MusicPlayer;

@@ -1,5 +1,4 @@
 // @ts-ignore
-const { configs } = pkg;
 import { config, configs as _configs, plugin, parser as _parser } from "typescript-eslint";
 import perfectionist from "eslint-plugin-perfectionist";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
@@ -20,7 +19,7 @@ export default config(
       "*.lock",
     ],
   },
-  configs.recommended,
+  _configs.recommended,
   ..._configs.strictTypeChecked,
   ..._configs.stylisticTypeChecked,
   eslintPluginPrettierRecommended,

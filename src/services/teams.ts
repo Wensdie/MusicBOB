@@ -1,5 +1,4 @@
-class Teams {
-  public name = 'Teams';
+export class Teams {
   private ignore: string[] = [];
 
   public addIgnore(user: string): void {
@@ -23,5 +22,3 @@ class Teams {
     this.ignore = [];
   }
 }
-
-export default Teams;

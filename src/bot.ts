@@ -1,22 +1,18 @@
-import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
-import fs from 'fs';
-import { commandSchema } from './schemas/commandSchema.js';
-import MusicPlayer from './services/musicPlayer.js';
-import Teams from './services/teams.js';
-import { Command } from './types/command.js';
-import Spotify from 'spotifydl-core';
+import { Client, Collection, Events, GatewayIntentBits, TextChannel } from 'discord.js';
+import * as commands from './commands';
+import { MusicPlayer, Teams } from './services';
+import type { Command } from './types';
+
 export class Bot {
-  public readonly discordClient: Client;
+  private readonly discordClient: Client;
   private static instance: Bot;
 
-  private constructor(
-    private readonly discordToken: string,
-    private readonly discordId: string,
-  ) {
+  private constructor(private readonly discordToken: string) {
     this.discordClient = new Client({
       intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
     });
 
+    this.discordClient.services = { Teams: undefined, MusicPlayer: undefined };
     this.discordClient.commands = new Collection<string, Command>();
 
     this.discordClient.on(Events.InteractionCreate, (interaction) => {
@@ -27,64 +23,69 @@ export class Bot {
       const command = interaction.client.commands.get(interaction.commandName);
 
       if (!command) {
-        console.error('Command was not found.');
-        return;
+        throw new Error(
+          `Command "${interaction.commandName}" is registered in Discord API, but was not initialized correctly or does not exist.`,
+        );
       }
 
-      try {
-        command.execute(interaction);
-      } catch (er) {
-        console.log(er);
-      }
+      command.execute(interaction).catch(async (error: unknown) => {
+        const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+        console.log(
+          `[WARNING] Error while executing command ${interaction.commandName}:\n${errorMessage}`,
+        );
+
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp({
+            content: `Error: ${errorMessage.slice(-1900)}`,
+            ephemeral: true,
+          });
+        } else {
+          await interaction.reply({
+            content: `Error:  ${errorMessage.slice(-1900)}`,
+            ephemeral: true,
+          });
+        }
+      });
     });
   }
 
-  public static getInstance(discordToken?: string, discordId?: string): Bot {
-    if (!Bot.instance && discordToken && discordId) {
-      Bot.instance = new Bot(discordToken, discordId);
+  public static getInstance(discordToken?: string): Bot {
+    if (!Bot.instance && discordToken) {
+      Bot.instance = new Bot(discordToken);
     }
     return Bot.instance;
   }
 
   public async authorize(): Promise<void> {
-    console.log('Authorizing to Discord API.');
+    console.log('[LOG] Authorizing to Discord API.');
     await this.discordClient.login(this.discordToken);
   }
 
-  public async loadUtilities(): Promise<void> {
-    console.log('Loading Bot utilities.');
-    await this.loadCommands();
-    this.loadServices();
+  public loadUtilities(): void {
+    console.log('[LOG] Loading Bot utilities.');
+    this.loadCommands();
   }
 
-  private async loadCommands(): Promise<void> {
-    try {
-      const folderPath = 'lib/commands';
-      const folderFiles = fs.readdirSync(folderPath).filter((file) => {
-        return file.includes('.js');
-      });
-
-      console.log('Loading bot commands.');
-
-      for (const file of folderFiles) {
-        const { default: command } = await import(`./commands/${file}`);
-        const parsedCommand = commandSchema.parse(command);
-        this.discordClient.commands.set(parsedCommand.data.name, parsedCommand);
-      }
-
-      console.log('Commands loaded succefully.');
-    } catch (er) {
-      console.error(`Error loading commands: ${er}`);
+  public getTeams(): Teams {
+    if (!this.discordClient.services.Teams) {
+      this.discordClient.services.Teams = new Teams();
     }
+    return this.discordClient.services.Teams;
   }
 
-  private loadServices(): void {
-    console.log('Loading bot services.');
+  public getMusicPlayer(channel: TextChannel): MusicPlayer {
+    if (!this.discordClient.services.MusicPlayer) {
+      this.discordClient.services.MusicPlayer = MusicPlayer.getInstance(channel);
+    }
 
-    this.discordClient.services = {
-      Teams: new Teams(),
-      MusicPlayer: new MusicPlayer(),
-    };
-    console.log('Services loaded succefully.');
+    return this.discordClient.services.MusicPlayer;
+  }
+
+  private loadCommands(): void {
+    console.log('[LOG] Loading bot commands.');
+    for (const [commandName, commandCode] of Object.entries(commands)) {
+      this.discordClient.commands.set(commandName, commandCode);
+    }
+    console.log('[LOG] Commands loaded succefully.');
   }
 }
