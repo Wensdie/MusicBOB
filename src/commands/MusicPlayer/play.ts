@@ -4,38 +4,48 @@ import {
   MessageFlags,
   SlashCommandBuilder,
   TextChannel,
-} from 'discord.js';
-import { DiscordGatewayAdapterCreator, joinVoiceChannel } from '@discordjs/voice';
-import { Bot } from '../../Bot';
-import type { Command } from '../../types';
+} from "discord.js";
+import {
+  DiscordGatewayAdapterCreator,
+  joinVoiceChannel,
+} from "@discordjs/voice";
+import { Bot } from "../../Bot";
+import type { Command } from "../../types";
 
 export const play: Command = {
   data: new SlashCommandBuilder()
-    .setName('play')
-    .setDescription('Provided with youtube link starts playing music on voice channel.')
+    .setName("play")
+    .setDescription(
+      "Provided with youtube link starts playing music on voice channel.",
+    )
     .addStringOption((option) =>
-      option.setName('url').setDescription('Plays video from youtube.').setRequired(true),
+      option
+        .setName("url")
+        .setDescription("Plays video from youtube.")
+        .setRequired(true),
     ),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!(interaction.member as GuildMember).voice.channelId) {
-      console.log('(`[LOG] Invoked bot/play without connecting to channel');
+      console.log("(`[LOG] Invoked bot/play without connecting to channel");
       await interaction.reply({
-        content: 'You have to join voice chat first.',
+        content: "You have to join voice chat first.",
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
     const bot = Bot.getInstance();
-    const musicPlayerService = bot.getMusicPlayer(interaction.channel as TextChannel);
+    const musicPlayerService = bot.getMusicPlayer(
+      interaction.channel as TextChannel,
+    );
 
-    const url = interaction.options.getString('url');
+    const url = interaction.options.getString("url");
     const urlPattern = /^(https:\/\/www\.youtube\.com\/watch).*/;
 
     //URL Check
     if (!url?.match(urlPattern)) {
       console.log(`[LOG] Invoked bot/play, with wrong URL pattern: ${url}`);
-      await interaction.reply({ content: 'Invalid URL.', ephemeral: true });
+      await interaction.reply({ content: "Invalid URL.", ephemeral: true });
       return;
     }
 
@@ -68,7 +78,8 @@ export const play: Command = {
         joinVoiceChannel({
           channelId: channelID,
           guildId: guildID,
-          adapterCreator: interaction.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
+          adapterCreator: interaction.guild
+            .voiceAdapterCreator as DiscordGatewayAdapterCreator,
         }),
       );
 
@@ -82,17 +93,20 @@ export const play: Command = {
     }
 
     //connection exists
-    if (connection?.joinConfig.channelId !== (interaction.member as GuildMember).voice.channelId) {
-      console.log('[LOG] Invoked bot/play but user is on another channel');
+    if (
+      connection?.joinConfig.channelId !==
+      (interaction.member as GuildMember).voice.channelId
+    ) {
+      console.log("[LOG] Invoked bot/play but user is on another channel");
       await interaction.editReply({
-        content: 'Bot is already connected on other channel.',
+        content: "Bot is already connected on other channel.",
       });
 
       return;
     }
 
     const song = await musicPlayerService.addSong(url);
-    console.log('[LOG] Invoked bot/play.');
+    console.log("[LOG] Invoked bot/play.");
     await interaction.editReply({
       content: `Added to queue: ${song.name} - ${song.length}`,
     });
