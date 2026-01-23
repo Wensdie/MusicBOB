@@ -2,6 +2,7 @@ import {
   ChatInputCommandInteraction,
   GuildMember,
   SlashCommandBuilder,
+  TeamMember,
   VoiceBasedChannel,
 } from "discord.js";
 import { Bot } from "../../Bot";
@@ -10,9 +11,9 @@ import type { Command, MemberTeam } from "../../types";
 
 export const teamup: Command = {
   data: new SlashCommandBuilder()
-    .setName("teamup")
+    .setName("team-up")
     .setDescription("Divide people on voice chat into 2 teams or more.")
-    .addStringOption((option) =>
+    .addIntegerOption((option) =>
       option
         .setName("amount")
         .setDescription('Divide into "amount" teams.')
@@ -20,7 +21,8 @@ export const teamup: Command = {
     ),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    if (!(interaction.member as GuildMember).voice.channelId) {
+    let member = interaction.member as GuildMember;
+    if (!member.voice.channelId || !member.voice.channel) {
       console.log("[LOG] Invoked bot/teamup without connecting to channel.");
       await interaction.reply({
         content: "You have to join voice chat first.",
@@ -31,80 +33,54 @@ export const teamup: Command = {
 
     const bot = Bot.getInstance();
     const teamsService = bot.getTeams();
+    const voiceChannel = member.voice.channel as VoiceBasedChannel;
 
-    const members = (
-      (interaction.member as GuildMember).voice.channel as VoiceBasedChannel
-    ).members.filter(
-      (user) =>
-        teamsService.getIgnore().includes(user.displayName) &&
-        teamsService.getIgnore().includes(user.nickname ?? "") &&
-        !(user.displayName === "MusicBOB"),
-    );
+    const validMembers = voiceChannel.members
+      .filter((user) => {
+        let isIgnoredName = teamsService.getIgnore().includes(user.displayName);
+        let isMusicBot = user.displayName === "MusicBOB";
+        return !isIgnoredName && !isMusicBot;
+      })
+      .map((user) => user.displayName);
 
-    if (members.size === 1) {
+    if (validMembers.length < 2) {
       console.log("[LOG] Invoked bot/teamup when alone on voice channel.");
       await interaction.reply({
-        content: "For ever alone. :(",
+        content: "Forever alone. :(",
         ephemeral: true,
       });
       return;
     }
 
-    let amount = 0;
-    if (interaction.options.getString("amount")) {
-      if (
-        Number(interaction.options.getString("amount")) > 2 &&
-        Number(interaction.options.getString("amount")) < members.size
-      ) {
-        amount = Number(interaction.options.getString("amount"));
-      } else {
-        console.log(
-          `[LOG] Invoked bot/teamup with invalid team amount: ${amount}.`,
-        );
-        await interaction.reply({
-          content: "Invalid team amount.",
-          ephemeral: true,
-        });
-        return;
-      }
-    } else {
-      amount = 2;
-    }
-    const numbers: number[] = [];
-    let j = 1;
-    for (let i = 0; i < members.size; i++) {
-      numbers.push(j);
-      if (j === amount) {
-        j = 1;
-      } else {
-        j++;
-      }
-    }
-    Helpers.shuffleArray(numbers);
+    let amount = interaction.options.getInteger("amount") ?? 2;
 
-    const membersTeams: MemberTeam[] = [];
-
-    let i = 0;
-    for (const member of members) {
-      membersTeams.push({
-        name: member[1].displayName,
-        team: numbers[i] ?? 0,
+    if (amount > validMembers.length) {
+      console.log(
+        `[LOG] Invalid team amount: ${amount} for ${validMembers.length} people.`,
+      );
+      await interaction.reply({
+        content: `You cannot split ${validMembers.length} people into ${amount} teams!`,
+        ephemeral: true,
       });
-      i++;
+      return;
     }
 
+    Helpers.shuffleArray(validMembers);
+
+    const teams: string[][] = Array.from({ length: amount }, () => []);
+    validMembers.forEach((memberName, index) => {
+      const teamIndex = index % amount;
+      teams[teamIndex]?.push(memberName);
+    });
     let message = "";
-
-    for (let k = 1; k <= amount; k++) {
-      message += `Team ${k}:\n`;
-      for (const member of membersTeams) {
-        if (member.team === k) {
-          message += `⦿ ${member.name}\n`;
-        }
-      }
+    teams.forEach((teamMembers, index) => {
+      const teamNumber = index + 1;
+      message += `**Team ${teamNumber}:**\n`;
+      message += teamMembers.map((name) => `⦿ ${name}`).join("\n");
       message += "\n\n";
-    }
-    console.log("[LOG] Successfully invoked bot/teamup.`");
+    });
+
+    console.log("[LOG] Successfully invoked bot/team-up.`");
     await interaction.reply({ content: message });
   },
 };

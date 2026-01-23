@@ -9,7 +9,7 @@ import type { Command } from "../../types";
 export const unignore: Command = {
   data: new SlashCommandBuilder()
     .setName("unignore")
-    .setDescription("Remove user from ignore[].")
+    .setDescription("Remove user from ignore.")
     .addStringOption((option) =>
       option
         .setName("user")
