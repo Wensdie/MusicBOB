@@ -3,24 +3,27 @@ import {
   GuildMember,
   SlashCommandBuilder,
   VoiceBasedChannel,
-} from 'discord.js';
-import { Bot } from '../../Bot';
-import { Helpers } from '../../utilities/';
-import type { Command, MemberTeam } from '../../types';
+} from "discord.js";
+import { Bot } from "../../Bot";
+import { Helpers } from "../../utilities/";
+import type { Command, MemberTeam } from "../../types";
 
 export const teamup: Command = {
   data: new SlashCommandBuilder()
-    .setName('teamup')
-    .setDescription('Divide people on voice chat into 2 teams or more.')
+    .setName("teamup")
+    .setDescription("Divide people on voice chat into 2 teams or more.")
     .addStringOption((option) =>
-      option.setName('amount').setDescription('Divide into "amount" teams.').setRequired(false),
+      option
+        .setName("amount")
+        .setDescription('Divide into "amount" teams.')
+        .setRequired(false),
     ),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!(interaction.member as GuildMember).voice.channelId) {
-      console.log('[LOG] Invoked bot/teamup without connecting to channel.');
+      console.log("[LOG] Invoked bot/teamup without connecting to channel.");
       await interaction.reply({
-        content: 'You have to join voice chat first.',
+        content: "You have to join voice chat first.",
         ephemeral: true,
       });
       return;
@@ -34,30 +37,32 @@ export const teamup: Command = {
     ).members.filter(
       (user) =>
         teamsService.getIgnore().includes(user.displayName) &&
-        teamsService.getIgnore().includes(user.nickname ?? '') &&
-        !(user.displayName === 'MusicBOB'),
+        teamsService.getIgnore().includes(user.nickname ?? "") &&
+        !(user.displayName === "MusicBOB"),
     );
 
     if (members.size === 1) {
-      console.log('[LOG] Invoked bot/teamup when alone on voice channel.');
+      console.log("[LOG] Invoked bot/teamup when alone on voice channel.");
       await interaction.reply({
-        content: 'For ever alone. :(',
+        content: "For ever alone. :(",
         ephemeral: true,
       });
       return;
     }
 
     let amount = 0;
-    if (interaction.options.getString('amount')) {
+    if (interaction.options.getString("amount")) {
       if (
-        Number(interaction.options.getString('amount')) > 2 &&
-        Number(interaction.options.getString('amount')) < members.size
+        Number(interaction.options.getString("amount")) > 2 &&
+        Number(interaction.options.getString("amount")) < members.size
       ) {
-        amount = Number(interaction.options.getString('amount'));
+        amount = Number(interaction.options.getString("amount"));
       } else {
-        console.log(`[LOG] Invoked bot/teamup with invalid team amount: ${amount}.`);
+        console.log(
+          `[LOG] Invoked bot/teamup with invalid team amount: ${amount}.`,
+        );
         await interaction.reply({
-          content: 'Invalid team amount.',
+          content: "Invalid team amount.",
           ephemeral: true,
         });
         return;
@@ -88,7 +93,7 @@ export const teamup: Command = {
       i++;
     }
 
-    let message = '';
+    let message = "";
 
     for (let k = 1; k <= amount; k++) {
       message += `Team ${k}:\n`;
@@ -97,9 +102,9 @@ export const teamup: Command = {
           message += `⦿ ${member.name}\n`;
         }
       }
-      message += '\n\n';
+      message += "\n\n";
     }
-    console.log('[LOG] Successfully invoked bot/teamup.`');
+    console.log("[LOG] Successfully invoked bot/teamup.`");
     await interaction.reply({ content: message });
   },
 };

@@ -1,5 +1,5 @@
-import dotenv from 'dotenv';
-import { Bot } from './src/Bot';
+import dotenv from "dotenv";
+import { Bot } from "./src/Bot";
 
 (async (): Promise<void> => {
   dotenv.config();
@@ -7,7 +7,7 @@ import { Bot } from './src/Bot';
   const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 
   if (!DISCORD_BOT_TOKEN) {
-    throw new Error('Discord Bot token is missing.');
+    throw new Error("Discord Bot token is missing.");
   }
   const bot = Bot.getInstance(DISCORD_BOT_TOKEN);
 
