@@ -1,7 +1,13 @@
-import { Client, Collection, Events, GatewayIntentBits, TextChannel } from 'discord.js';
-import * as commands from './commands';
-import { MusicPlayer, Teams } from './services';
-import type { Command } from './types';
+import {
+  Client,
+  Collection,
+  Events,
+  GatewayIntentBits,
+  TextChannel,
+} from "discord.js";
+import * as commands from "./commands";
+import { MusicPlayer, Teams, Reminder } from "./services";
+import type { Command } from "./types";
 
 export class Bot {
   private readonly discordClient: Client;
@@ -9,12 +15,22 @@ export class Bot {
 
   private constructor(private readonly discordToken: string) {
     this.discordClient = new Client({
-      intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.GuildVoiceStates,
+      ],
     });
 
-    this.discordClient.services = { Teams: undefined, MusicPlayer: undefined };
+    this.discordClient.services = {
+      Teams: undefined,
+      MusicPlayer: undefined,
+      Reminder: () => Reminder(this.discordClient),
+    };
     this.discordClient.commands = new Collection<string, Command>();
-
+    this.discordClient.services.Reminder();
     this.discordClient.on(Events.InteractionCreate, (interaction) => {
       if (!interaction.isChatInputCommand()) {
         return;
@@ -29,7 +45,8 @@ export class Bot {
       }
 
       command.execute(interaction).catch(async (error: unknown) => {
-        const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+        const errorMessage =
+          error instanceof Error ? error.message : JSON.stringify(error);
         console.log(
           `[WARNING] Error while executing command ${interaction.commandName}:\n${errorMessage}`,
         );
@@ -57,12 +74,12 @@ export class Bot {
   }
 
   public async authorize(): Promise<void> {
-    console.log('[LOG] Authorizing to Discord API.');
+    console.log("[LOG] Authorizing to Discord API.");
     await this.discordClient.login(this.discordToken);
   }
 
   public loadUtilities(): void {
-    console.log('[LOG] Loading Bot utilities.');
+    console.log("[LOG] Loading Bot utilities.");
     this.loadCommands();
   }
 
@@ -75,17 +92,18 @@ export class Bot {
 
   public getMusicPlayer(channel: TextChannel): MusicPlayer {
     if (!this.discordClient.services.MusicPlayer) {
-      this.discordClient.services.MusicPlayer = MusicPlayer.getInstance(channel);
+      this.discordClient.services.MusicPlayer =
+        MusicPlayer.getInstance(channel);
     }
 
     return this.discordClient.services.MusicPlayer;
   }
 
   private loadCommands(): void {
-    console.log('[LOG] Loading bot commands.');
-    for (const [commandName, commandCode] of Object.entries(commands)) {
-      this.discordClient.commands.set(commandName, commandCode);
+    console.log("[LOG] Loading bot commands.");
+    for (const command of Object.values(commands)) {
+      this.discordClient.commands.set(command.data.name, command);
     }
-    console.log('[LOG] Commands loaded succefully.');
+    console.log("[LOG] Commands loaded succefully.");
   }
 }
