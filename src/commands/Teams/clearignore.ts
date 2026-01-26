@@ -5,6 +5,7 @@ import {
 } from "discord.js";
 import { Bot } from "../../Bot";
 import type { Command } from "../../types";
+import { EmbedTemplates } from "../../utilities/embedTemplates";
 
 export const clearignore: Command = {
   data: new SlashCommandBuilder()
@@ -18,7 +19,7 @@ export const clearignore: Command = {
         "[LOG] Invoked bot/clearignore without connecting to channel.",
       );
       await interaction.reply({
-        content: "You have to join voice chat first.",
+        embeds: [EmbedTemplates.error("You have to join voice chat first.")],
         ephemeral: true,
       });
       return;
@@ -28,7 +29,9 @@ export const clearignore: Command = {
     const teamsService = bot.getTeams();
 
     teamsService.clearIgnore();
-    await interaction.reply({ content: "Ignore cleared." });
+    await interaction.reply({
+      embeds: [EmbedTemplates.success("Ignore cleared.", "     ")],
+    });
     console.log("[LOG] Successfully bot/clearignore.");
   },
 };

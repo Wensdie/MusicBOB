@@ -5,6 +5,7 @@ import {
 } from "discord.js";
 import { Bot } from "../../Bot";
 import type { Command } from "../../types";
+import { EmbedTemplates } from "../../utilities/embedTemplates";
 
 export const showignore: Command = {
   data: new SlashCommandBuilder()
@@ -17,7 +18,7 @@ export const showignore: Command = {
         "[LOG] Invoked bot/showignore without connecting to channel.",
       );
       await interaction.reply({
-        content: "You have to join voice chat first.",
+        embeds: [EmbedTemplates.error("You have to join voice chat first.")],
         ephemeral: true,
       });
       return;
@@ -41,7 +42,9 @@ export const showignore: Command = {
         "[LOG] Successfully invoked bot/showignore: none is being ignored.",
       );
       await interaction.reply({
-        content: "No one is ignored right now.",
+        embeds: [
+          EmbedTemplates.success("No one is ignored right now.", "          "),
+        ],
       });
     }
   },

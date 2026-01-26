@@ -8,6 +8,7 @@ import {
 import { AudioPlayerStatus } from "@discordjs/voice";
 import { Bot } from "../../Bot";
 import type { Command } from "../../types";
+import { EmbedTemplates } from "../../utilities/embedTemplates";
 
 export const skip: Command = {
   data: new SlashCommandBuilder()
@@ -18,7 +19,7 @@ export const skip: Command = {
     if (!(interaction.member as GuildMember).voice.channelId) {
       console.log("[LOG] Invoked bot/skip without connecting to channel");
       await interaction.reply({
-        content: "You have to join voice chat first.",
+        embeds: [EmbedTemplates.error("You have to join voice chat first.")],
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -36,7 +37,7 @@ export const skip: Command = {
         "[LOG] Invoked bot/showignore without bot being connected to any channel",
       );
       await interaction.reply({
-        content: "Bot is not connected to any channel.",
+        embeds: [EmbedTemplates.error("Bot is not connected to any channel.")],
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -50,7 +51,9 @@ export const skip: Command = {
         "[LOG] Invoked bot/skip but bot and user are on different channels",
       );
       await interaction.reply({
-        content: "You cannot skip song on the other channel.",
+        embeds: [
+          EmbedTemplates.error("You cannot skip song on the other channel."),
+        ],
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -61,7 +64,7 @@ export const skip: Command = {
     if (getCurrentStatus === AudioPlayerStatus.Idle) {
       console.log("[LOG] Invoked bot/skip but nothing is playing");
       await interaction.reply({
-        content: "Nothing is playing right now.",
+        embeds: [EmbedTemplates.info("Nothing is playing right now.", "     ")],
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -71,7 +74,7 @@ export const skip: Command = {
       console.log("[LOG] Successfully processed bot/skip skipped song.");
       musicPlayerService.skip();
       await interaction.reply({
-        content: "Song skipped.",
+        embeds: [EmbedTemplates.success("Song skipped.", "    ")],
       });
     }
   },

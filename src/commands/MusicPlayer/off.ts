@@ -6,6 +6,7 @@ import {
 } from "discord.js";
 import { Bot } from "../../Bot";
 import type { Command } from "../../types";
+import { EmbedTemplates } from "../../utilities/embedTemplates";
 
 export const off: Command = {
   data: new SlashCommandBuilder()
@@ -16,7 +17,7 @@ export const off: Command = {
     if (!(interaction.member as GuildMember).voice.channelId) {
       console.log("[LOG] Invoked bot/off without connecting to channel.");
       await interaction.reply({
-        content: "You have to join voice chat first.",
+        embeds: [EmbedTemplates.error("You have to join voice chat first.")],
         ephemeral: true,
       });
       return;
@@ -32,14 +33,17 @@ export const off: Command = {
     if (!connection) {
       console.log("[LOG] Invoked bot/off but bot wasnt on voice channel.");
       await interaction.reply({
-        content: "Bot is already disconnected.",
+        embeds: [EmbedTemplates.error("Bot is already disconnected.")],
         ephemeral: true,
       });
       return;
     }
 
     console.log("[LOG] Successfully bot/off, bot disconnecting from channel.");
-    await interaction.reply("Disconnected. Bajo!");
+    await interaction.reply({
+      embeds: [EmbedTemplates.success("Disconnected. Bajo!", "   ")],
+      ephemeral: true,
+    });
     connection.disconnect();
   },
 };

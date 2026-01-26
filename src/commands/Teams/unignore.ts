@@ -5,6 +5,7 @@ import {
 } from "discord.js";
 import { Bot } from "../../Bot";
 import type { Command } from "../../types";
+import { EmbedTemplates } from "../../utilities/embedTemplates";
 
 export const unignore: Command = {
   data: new SlashCommandBuilder()
@@ -20,7 +21,7 @@ export const unignore: Command = {
     if (!(interaction.member as GuildMember).voice.channelId) {
       console.log("[LOG] Invoked bot/unignore without connecting to channel.");
       await interaction.reply({
-        content: "You have to join voice chat first.",
+        embeds: [EmbedTemplates.error("You have to join voice chat first.")],
         ephemeral: true,
       });
       return;
@@ -34,14 +35,14 @@ export const unignore: Command = {
     if (ifDeleted) {
       console.log(`[LOG] Successfully bot/unignore stopped ignoring: ${user}.`);
       await interaction.reply({
-        content: `Unignoring: ${user}`,
+        embeds: [EmbedTemplates.info(`Unignoring: ${user}`, "   ")],
       });
     } else {
       console.log(
         `[LOG] Invoked bot/unignore, but did not find the mentioned user: ${user}.`,
       );
       await interaction.reply({
-        content: "User not found.",
+        embeds: [EmbedTemplates.error("User not found.")],
         ephemeral: true,
       });
     }

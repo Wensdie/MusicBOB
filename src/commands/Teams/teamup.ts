@@ -8,6 +8,7 @@ import {
 import { Bot } from "../../Bot";
 import { Helpers } from "../../utilities/";
 import type { Command, MemberTeam } from "../../types";
+import { EmbedTemplates } from "../../utilities/embedTemplates";
 
 export const teamup: Command = {
   data: new SlashCommandBuilder()
@@ -23,9 +24,9 @@ export const teamup: Command = {
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     let member = interaction.member as GuildMember;
     if (!member.voice.channelId || !member.voice.channel) {
-      console.log("[LOG] Invoked bot/teamup without connecting to channel.");
+      console.log("[LOG] Invoked bot/team-up without connecting to channel.");
       await interaction.reply({
-        content: "You have to join voice chat first.",
+        embeds: [EmbedTemplates.error("You have to join voice chat first.")],
         ephemeral: true,
       });
       return;
@@ -46,7 +47,7 @@ export const teamup: Command = {
     if (validMembers.length < 2) {
       console.log("[LOG] Invoked bot/teamup when alone on voice channel.");
       await interaction.reply({
-        content: "Forever alone. :(",
+        embeds: [EmbedTemplates.info("Forever alone. :(", "       ")],
         ephemeral: true,
       });
       return;
@@ -59,7 +60,11 @@ export const teamup: Command = {
         `[LOG] Invalid team amount: ${amount} for ${validMembers.length} people.`,
       );
       await interaction.reply({
-        content: `You cannot split ${validMembers.length} people into ${amount} teams!`,
+        embeds: [
+          EmbedTemplates.error(
+            `You cannot split ${validMembers.length} people into ${amount} teams!`,
+          ),
+        ],
         ephemeral: true,
       });
       return;
@@ -80,7 +85,9 @@ export const teamup: Command = {
       message += "\n\n";
     });
 
-    console.log("[LOG] Successfully invoked bot/team-up.`");
-    await interaction.reply({ content: message });
+    console.log("[LOG] Successfully invoked bot/team-up.");
+    await interaction.reply({
+      embeds: [EmbedTemplates.success(message, "        ")],
+    });
   },
 };

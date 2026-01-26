@@ -11,6 +11,7 @@ import {
 } from "@discordjs/voice";
 import { Bot } from "../../Bot";
 import type { Command } from "../../types";
+import { EmbedTemplates } from "../../utilities/embedTemplates";
 
 export const play: Command = {
   data: new SlashCommandBuilder()
@@ -29,7 +30,7 @@ export const play: Command = {
     if (!(interaction.member as GuildMember).voice.channelId) {
       console.log("(`[LOG] Invoked bot/play without connecting to channel");
       await interaction.reply({
-        content: "You have to join voice chat first.",
+        embeds: [EmbedTemplates.error("You have to join voice chat first.")],
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -45,7 +46,10 @@ export const play: Command = {
     //URL Check
     if (!url?.match(urlPattern)) {
       console.log(`[LOG] Invoked bot/play, with wrong URL pattern: ${url}`);
-      await interaction.reply({ content: "Invalid URL.", ephemeral: true });
+      await interaction.reply({
+        embeds: [EmbedTemplates.error("Invalid URL.")],
+        ephemeral: true,
+      });
       return;
     }
 
@@ -86,7 +90,12 @@ export const play: Command = {
       const song = await musicPlayerService.addSong(url);
       console.log(`[LOG] Invoked bot/play -  ${song.name} - ${song.length}.`);
       await interaction.editReply({
-        content: `Added to queue: ${song.name} - ${song.length}`,
+        embeds: [
+          EmbedTemplates.success(
+            `Added to queue: ${song.name}`,
+            `${song.length}`,
+          ),
+        ],
       });
 
       return;
@@ -99,7 +108,9 @@ export const play: Command = {
     ) {
       console.log("[LOG] Invoked bot/play but user is on another channel");
       await interaction.editReply({
-        content: "Bot is already connected on other channel.",
+        embeds: [
+          EmbedTemplates.error("Bot is already connected on other channel."),
+        ],
       });
 
       return;
@@ -108,7 +119,12 @@ export const play: Command = {
     const song = await musicPlayerService.addSong(url);
     console.log("[LOG] Invoked bot/play.");
     await interaction.editReply({
-      content: `Added to queue: ${song.name} - ${song.length}`,
+      embeds: [
+        EmbedTemplates.success(
+          `Added to queue: ${song.name}`,
+          `${song.length}`,
+        ),
+      ],
     });
   },
 };

@@ -5,6 +5,7 @@ import {
 } from "discord.js";
 import { Bot } from "../../Bot";
 import type { Command } from "../../types";
+import { EmbedTemplates } from "../../utilities/embedTemplates";
 
 export const queue: Command = {
   data: new SlashCommandBuilder()
@@ -45,7 +46,12 @@ export const queue: Command = {
       }
 
       await interaction.reply({
-        content: `${queuePlayingNow}\n${queueEmpty !== "" ? queueEmpty : queueList}`,
+        embeds: [
+          EmbedTemplates.info(
+            `${queuePlayingNow}\n${queueEmpty !== "" ? queueEmpty : queueList}`,
+            "    ",
+          ),
+        ],
       });
     }
   },

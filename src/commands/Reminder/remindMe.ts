@@ -8,6 +8,7 @@ import * as chrono from "chrono-node";
 import { Bot } from "../../Bot";
 import { remindersDB } from "../../database/database";
 import type { Command } from "../../types";
+import { EmbedTemplates } from "../../utilities/embedTemplates";
 export const remindMe: Command = {
   data: new SlashCommandBuilder()
     .setName("remind-me")
@@ -32,15 +33,22 @@ export const remindMe: Command = {
     const parsedDate = chrono.parseDate(whenString);
     if (!parsedDate) {
       await interaction.reply({
-        content: `I couldn't understand when is "**${whenString}**".`,
+        embeds: [
+          EmbedTemplates.error(
+            `I couldn't understand when is "**${whenString}**".`,
+          ),
+        ],
         ephemeral: true,
       });
       return;
     }
     if (parsedDate.getTime() <= Date.now()) {
       await interaction.reply({
-        content:
-          "You cannot set a reminder in the past. Time travel is not supported yet.",
+        embeds: [
+          EmbedTemplates.error(
+            "You cannot set a reminder in the past. Time travel is not supported yet.",
+          ),
+        ],
         ephemeral: true,
       });
       return;
@@ -58,7 +66,12 @@ export const remindMe: Command = {
     );
     const discordTimestamp = Math.floor(parsedDate.getTime() / 1000);
     await interaction.reply({
-      content: ` Got it! I will DM you <t:${discordTimestamp}:R> (<t:${discordTimestamp}:F>).\n**Reminder:** "${messageContent}"`,
+      embeds: [
+        EmbedTemplates.info(
+          ` Got it! I will DM you <t:${discordTimestamp}:R> (<t:${discordTimestamp}:F>).`,
+          `**Reminder:** "${messageContent}"`,
+        ),
+      ],
       ephemeral: true,
     });
   },

@@ -1,4 +1,5 @@
 import { TextChannel } from "discord.js";
+import { statsDB, updateSongStats } from "../database/database";
 import {
   AudioPlayer,
   AudioPlayerStatus,
@@ -11,6 +12,7 @@ import { PassThrough } from "stream";
 import { YTDLPlayer } from "../utilities";
 import type { ChildProcessWithoutNullStreams } from "child_process";
 import type { Song } from "../types";
+import { EmbedTemplates } from "../utilities/embedTemplates";
 
 export class MusicPlayer {
   private static instance: MusicPlayer;
@@ -122,9 +124,15 @@ export class MusicPlayer {
       });
 
       this.audioPlayer.play(resource);
-      await this.channel.send(
-        `Playing: ${this.songNow.name} - ${this.songNow.length}`,
-      );
+      updateSongStats(this.songNow);
+      await this.channel.send({
+        embeds: [
+          EmbedTemplates.info(
+            `Playing: ${this.songNow.name} - ${this.songNow.length}`,
+            this.songNow.url || " ",
+          ),
+        ],
+      });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : error;
       throw new Error(`Error while sending a message:\n${errorMessage}`);
@@ -132,16 +140,25 @@ export class MusicPlayer {
   }
 
   private async startDisconnectTimer(): Promise<void> {
-    await this.channel.send(
-      "Queue empty. Disconnecting in 3 minutes if no new song is added.",
-    );
+    await this.channel.send({
+      embeds: [
+        EmbedTemplates.info(
+          "Queue empty.",
+          " Disconnecting in 3 minutes if no new song is added.",
+        ),
+      ],
+    });
     this.timer = setTimeout(() => {
       this.connection?.destroy();
       this.connection = undefined;
-      this.channel.send("Disconnecting, Bajo").catch((error: unknown) => {
-        const errorMessage = error instanceof Error ? error.message : error;
-        throw new Error(`Error while sending a message:\n${errorMessage}`);
-      });
+      this.channel
+        .send({
+          embeds: [EmbedTemplates.info("Disconnecting, Bajo", "  ")],
+        })
+        .catch((error: unknown) => {
+          const errorMessage = error instanceof Error ? error.message : error;
+          throw new Error(`Error while sending a message:\n${errorMessage}`);
+        });
       console.log("[LOG] Disconnected due to inactivity.");
     }, 180000);
   }
